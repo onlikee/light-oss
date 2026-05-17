@@ -52,7 +52,7 @@ const existingSite = {
   index_document: "index.html",
   error_document: "",
   spa_fallback: true,
-  domains: ["demo.underhear.cn"],
+  domains: ["demo.localhost"],
   created_at: "2026-03-30T00:00:00Z",
   updated_at: "2026-03-30T00:00:00Z",
 };
@@ -89,7 +89,7 @@ describe("SitesPage", () => {
     expect(await screen.findByText("Site list")).toBeInTheDocument();
     expect(await screen.findByText("app/")).toBeInTheDocument();
     expect(
-      screen.getByText((content) => content.includes("demo.underhear.cn")),
+      screen.getByText((content) => content.includes("demo.localhost")),
     ).toBeInTheDocument();
     expect(screen.getByText("websites")).toBeInTheDocument();
     expect(screen.getByText("Index document")).toBeInTheDocument();
@@ -109,7 +109,7 @@ describe("SitesPage", () => {
       index_document: "home.html",
       error_document: "404.html",
       spa_fallback: false,
-      domains: ["landing.underhear.cn", "www.underhear.cn"],
+      domains: ["landing.localhost", "www.localhost"],
     });
 
     renderWithApp(<SitesPage />);
@@ -126,7 +126,7 @@ describe("SitesPage", () => {
     );
     await userEvent.type(
       within(dialog).getByLabelText("Domains"),
-      "landing.underhear.cn, www.underhear.cn",
+      "landing.localhost, www.localhost",
     );
     await userEvent.click(
       within(dialog).getByRole("combobox", { name: "Enabled" }),
@@ -163,7 +163,7 @@ describe("SitesPage", () => {
           index_document: "home.html",
           error_document: "404.html",
           spa_fallback: false,
-          domains: ["landing.underhear.cn", "www.underhear.cn"],
+          domains: ["landing.localhost", "www.localhost"],
         },
       );
     });
@@ -215,7 +215,7 @@ describe("SitesPage", () => {
     expect(within(dialog).getByText("deployments/dist/")).toBeInTheDocument();
     await userEvent.type(
       within(dialog).getByLabelText("Domains"),
-      "demo.underhear.cn",
+      "demo.localhost",
     );
     await userEvent.click(
       within(dialog).getByRole("button", { name: "Upload and publish" }),
@@ -228,7 +228,7 @@ describe("SitesPage", () => {
           bucket: "websites",
           parentPrefix: "deployments/",
           files: [indexFile, appFile],
-          domains: ["demo.underhear.cn"],
+          domains: ["demo.localhost"],
           enabled: true,
           indexDocument: "index.html",
           errorDocument: "",
@@ -271,7 +271,7 @@ describe("SitesPage", () => {
     expect(within(dialog).getByText("landing.html")).toBeInTheDocument();
     await userEvent.type(
       within(dialog).getByLabelText("Domains"),
-      "demo.underhear.cn",
+      "demo.localhost",
     );
     await userEvent.click(
       within(dialog).getByRole("button", { name: "Upload and publish" }),
@@ -284,7 +284,7 @@ describe("SitesPage", () => {
           bucket: "websites",
           parentPrefix: "deployments/",
           file: landingFile,
-          domains: ["demo.underhear.cn"],
+          domains: ["demo.localhost"],
           enabled: true,
           errorDocument: "",
           spaFallback: true,
@@ -304,7 +304,7 @@ describe("SitesPage", () => {
           {
             ...existingSite,
             root_prefix: "app-v2/",
-            domains: ["app.underhear.cn", "www.underhear.cn"],
+            domains: ["app.localhost", "www.localhost"],
             enabled: false,
             spa_fallback: false,
           },
@@ -314,7 +314,7 @@ describe("SitesPage", () => {
     vi.mocked(updateSite).mockResolvedValue({
       ...existingSite,
       root_prefix: "app-v2/",
-      domains: ["app.underhear.cn", "www.underhear.cn"],
+      domains: ["app.localhost", "www.localhost"],
       enabled: false,
       spa_fallback: false,
     });
@@ -326,7 +326,7 @@ describe("SitesPage", () => {
     const dialog = await screen.findByRole("dialog");
     expect(within(dialog).getByDisplayValue("app/")).toBeInTheDocument();
     expect(
-      within(dialog).getByDisplayValue("demo.underhear.cn"),
+      within(dialog).getByDisplayValue("demo.localhost"),
     ).toBeInTheDocument();
 
     await userEvent.clear(within(dialog).getByLabelText("Root prefix"));
@@ -337,7 +337,7 @@ describe("SitesPage", () => {
     await userEvent.clear(within(dialog).getByLabelText("Domains"));
     await userEvent.type(
       within(dialog).getByLabelText("Domains"),
-      "app.underhear.cn, www.underhear.cn",
+      "app.localhost, www.localhost",
     );
     await userEvent.click(
       within(dialog).getByRole("combobox", { name: "Enabled" }),
@@ -366,7 +366,7 @@ describe("SitesPage", () => {
           index_document: "index.html",
           error_document: "",
           spa_fallback: false,
-          domains: ["app.underhear.cn", "www.underhear.cn"],
+          domains: ["app.localhost", "www.localhost"],
         },
       );
     });

@@ -11,7 +11,7 @@
       "description": "Local backend default"
     },
     {
-      "url": "http://oss.underhear.cn",
+      "url": "http://api.localhost",
       "description": "Gateway example"
     }
   ],
@@ -1324,7 +1324,7 @@
         "tags": ["Sites"],
         "operationId": "createSite",
         "summary": "Create a site binding",
-        "description": "Site domains must match *.underhear.cn. root_prefix is normalized to end with a trailing slash. index_document defaults to index.html when omitted or empty. enabled defaults to true. spa_fallback defaults to false.",
+        "description": "Site domains must contain exactly one label before the configured APP_SITE_DOMAIN_SUFFIX. root_prefix is normalized to end with a trailing slash. index_document defaults to index.html when omitted or empty. enabled defaults to true. spa_fallback defaults to false.",
         "security": [
           {
             "bearerAuth": []
@@ -2526,10 +2526,9 @@
           "domains": {
             "type": "array",
             "items": {
-              "type": "string",
-              "pattern": "^[a-z0-9]([a-z0-9-]*[a-z0-9])?\\.underhear\\.cn$"
+              "type": "string"
             },
-            "description": "Optional domain bindings. Each item must match *.underhear.cn with exactly one label before underhear.cn."
+            "description": "Optional domain bindings. Each item must contain exactly one label before the configured APP_SITE_DOMAIN_SUFFIX."
           }
         }
       },
@@ -2552,7 +2551,7 @@
           "domains": {
             "type": "string",
             "description": "JSON string array of site domains. At least one domain is required.",
-            "example": "[\"demo.underhear.cn\"]"
+            "example": "[\"demo.localhost\"]"
           },
           "enabled": {
             "type": "string",
@@ -2605,7 +2604,7 @@
           "domains": {
             "type": "string",
             "description": "JSON string array of site domains. At least one domain is required.",
-            "example": "[\"demo.underhear.cn\"]"
+            "example": "[\"demo.localhost\"]"
           },
           "enabled": {
             "type": "string",

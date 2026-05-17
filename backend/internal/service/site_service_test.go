@@ -41,13 +41,13 @@ func TestSiteServiceFindByDomainNormalizesHost(t *testing.T) {
 		BucketName: "websites",
 		RootPrefix: "demo/",
 		Enabled:    true,
-		Domains:    []string{"demo.underhear.cn"},
+		Domains:    []string{"demo.localhost"},
 	})
 	if err != nil {
 		t.Fatalf("create site: %v", err)
 	}
 
-	site, err := siteService.FindByDomain(ctx, "Demo.Underhear.Cn:80")
+	site, err := siteService.FindByDomain(ctx, "Demo.Localhost:80")
 	if err != nil {
 		t.Fatalf("find by domain: %v", err)
 	}
@@ -123,7 +123,7 @@ func TestSiteServiceOpenContentUsesFallbacksAndHidesPrivateObjects(t *testing.T)
 		RootPrefix:    "demo/",
 		Enabled:       true,
 		ErrorDocument: "404.html",
-		Domains:       []string{"demo.underhear.cn"},
+		Domains:       []string{"demo.localhost"},
 	})
 	if err != nil {
 		t.Fatalf("update site: %v", err)
@@ -154,22 +154,22 @@ func TestSiteServiceOpenContentUsesFallbacksAndHidesPrivateObjects(t *testing.T)
 	}
 }
 
-func TestNormalizeSiteDomainOnlyAcceptsSingleLevelUnderhearSubdomains(t *testing.T) {
-	valid, err := NormalizeSiteDomain("Demo.Underhear.Cn")
+func TestNormalizeSiteDomainOnlyAcceptsSingleLevelConfiguredSubdomains(t *testing.T) {
+	valid, err := NormalizeSiteDomain("Demo.Example.Com", "example.com")
 	if err != nil {
 		t.Fatalf("expected valid domain, got %v", err)
 	}
-	if valid != "demo.underhear.cn" {
+	if valid != "demo.example.com" {
 		t.Fatalf("expected normalized domain, got %q", valid)
 	}
 
 	invalidDomains := []string{
-		"underhear.cn",
-		"www.demo.underhear.cn",
-		"demo.example.com",
+		"example.com",
+		"www.demo.example.com",
+		"demo.localhost",
 	}
 	for _, domain := range invalidDomains {
-		if _, err := NormalizeSiteDomain(domain); err == nil {
+		if _, err := NormalizeSiteDomain(domain, "example.com"); err == nil {
 			t.Fatalf("expected %q to be rejected", domain)
 		}
 	}
@@ -199,7 +199,7 @@ func newTestSiteServices(t *testing.T) (*repository.BucketRepository, *ObjectSer
 	storageQuotaRepo := repository.NewStorageQuotaRepository(db)
 	storageQuotaService := NewStorageQuotaService(zap.NewNop(), root, localStorage, objectRepo, recycleRepo, storageQuotaRepo)
 	objectService := NewObjectService(db, bucketRepo, objectRepo, recycleRepo, localStorage, storageQuotaService)
-	siteService := NewSiteService(bucketRepo, siteRepo, objectService)
+	siteService := NewSiteService(bucketRepo, siteRepo, objectService, "localhost")
 	return bucketRepo, objectService, siteService
 }
 

@@ -2212,7 +2212,7 @@ describe("BucketObjectsPage", () => {
         index_document: "index.html",
         error_document: "",
         spa_fallback: true,
-        domains: ["demo.underhear.cn"],
+        domains: ["demo.localhost"],
         created_at: "2026-03-30T00:00:00Z",
         updated_at: "2026-03-30T00:00:00Z",
       },
@@ -2252,7 +2252,7 @@ describe("BucketObjectsPage", () => {
     expect(within(dialog).getByText("docs/dist/")).toBeInTheDocument();
     await userEvent.type(
       within(dialog).getByLabelText("Domains"),
-      "demo.underhear.cn",
+      "demo.localhost",
     );
     await userEvent.click(
       within(dialog).getByRole("button", { name: "Upload and publish" }),
@@ -2265,7 +2265,7 @@ describe("BucketObjectsPage", () => {
           bucket: "demo",
           parentPrefix: "docs/",
           files: [indexFile, appFile],
-          domains: ["demo.underhear.cn"],
+          domains: ["demo.localhost"],
           enabled: true,
           indexDocument: "index.html",
           errorDocument: "",
@@ -2308,7 +2308,7 @@ describe("BucketObjectsPage", () => {
       index_document: "landing.html",
       error_document: "",
       spa_fallback: true,
-      domains: ["demo.underhear.cn"],
+      domains: ["demo.localhost"],
       created_at: "2026-03-30T00:00:00Z",
       updated_at: "2026-03-30T00:00:00Z",
     });
@@ -2337,7 +2337,7 @@ describe("BucketObjectsPage", () => {
     expect(within(dialog).getByText("landing.html")).toBeInTheDocument();
     await userEvent.type(
       within(dialog).getByLabelText("Domains"),
-      "demo.underhear.cn",
+      "demo.localhost",
     );
     await userEvent.click(
       within(dialog).getByRole("button", { name: "Upload and publish" }),
@@ -2350,7 +2350,7 @@ describe("BucketObjectsPage", () => {
           bucket: "demo",
           parentPrefix: "docs/",
           file: landingFile,
-          domains: ["demo.underhear.cn"],
+          domains: ["demo.localhost"],
           enabled: true,
           errorDocument: "",
           spaFallback: true,
@@ -2679,7 +2679,7 @@ describe("BucketObjectsPage", () => {
       index_document: "index.html",
       error_document: "",
       spa_fallback: true,
-      domains: ["demo.underhear.cn", "www.underhear.cn"],
+      domains: ["demo.localhost", "www.localhost"],
       created_at: "2026-03-30T00:00:00Z",
       updated_at: "2026-03-30T00:00:00Z",
     });
@@ -2701,7 +2701,7 @@ describe("BucketObjectsPage", () => {
 
     await userEvent.type(
       within(dialog).getByLabelText("Domains"),
-      "demo.underhear.cn, www.underhear.cn",
+      "demo.localhost, www.localhost",
     );
     await userEvent.click(
       within(dialog).getByRole("button", { name: "Publish site" }),
@@ -2717,7 +2717,7 @@ describe("BucketObjectsPage", () => {
           index_document: "index.html",
           error_document: "",
           spa_fallback: true,
-          domains: ["demo.underhear.cn", "www.underhear.cn"],
+          domains: ["demo.localhost", "www.localhost"],
         },
       );
     });
@@ -2771,7 +2771,7 @@ describe("BucketObjectsPage", () => {
       index_document: "readme.txt",
       error_document: "",
       spa_fallback: true,
-      domains: ["demo.underhear.cn"],
+      domains: ["demo.localhost"],
       created_at: "2026-03-30T00:00:00Z",
       updated_at: "2026-03-30T00:00:00Z",
     });
@@ -2794,7 +2794,7 @@ describe("BucketObjectsPage", () => {
 
     await userEvent.type(
       within(dialog).getByLabelText("Domains"),
-      "demo.underhear.cn",
+      "demo.localhost",
     );
     await userEvent.click(
       within(dialog).getByRole("button", { name: "Publish site" }),
@@ -2806,7 +2806,7 @@ describe("BucketObjectsPage", () => {
         {
           bucket: "demo",
           objectKey: "docs/readme.txt",
-          domains: ["demo.underhear.cn"],
+          domains: ["demo.localhost"],
           enabled: true,
           errorDocument: "",
           spaFallback: true,
@@ -2852,7 +2852,7 @@ describe("BucketObjectsPage", () => {
     const dialog = await screen.findByRole("dialog");
     await userEvent.type(
       within(dialog).getByLabelText("Domains"),
-      "demo.underhear.cn",
+      "demo.localhost",
     );
     await userEvent.click(
       within(dialog).getByRole("button", { name: "Publish site" }),

@@ -158,7 +158,7 @@ describe("BucketsPage", () => {
             index_document: "index.html",
             error_document: "",
             spa_fallback: true,
-            domains: ["demo.underhear.cn", "www.underhear.cn"],
+            domains: ["demo.localhost", "www.localhost"],
             created_at: "2026-03-25T00:00:00Z",
             updated_at: "2026-03-25T00:00:00Z",
           },
@@ -191,7 +191,7 @@ describe("BucketsPage", () => {
       within(dialog).getByText((_, element) => {
         return (
           element?.textContent ===
-          "Domains: demo.underhear.cn, www.underhear.cn"
+          "Domains: demo.localhost, www.localhost"
         );
       }),
     ).toBeInTheDocument();

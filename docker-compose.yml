@@ -27,6 +27,7 @@ services:
       APP_ENV: ${APP_ENV}
       APP_ADDR: ${APP_ADDR}
       APP_PUBLIC_BASE_URL: http://localhost
+      APP_SITE_DOMAIN_SUFFIX: ${APP_SITE_DOMAIN_SUFFIX:-localhost}
       APP_STORAGE_ROOT: ${APP_STORAGE_ROOT}
       APP_MAX_UPLOAD_SIZE_BYTES: ${APP_MAX_UPLOAD_SIZE_BYTES}
       APP_MAX_MULTIPART_MEMORY_BYTES: ${APP_MAX_MULTIPART_MEMORY_BYTES}
@@ -53,6 +54,7 @@ services:
       args:
         VITE_DEFAULT_API_BASE_URL: http://localhost
         VITE_DEFAULT_BEARER_TOKEN: ${VITE_DEFAULT_BEARER_TOKEN}
+        VITE_SITE_DOMAIN_SUFFIX: ${VITE_SITE_DOMAIN_SUFFIX:-localhost}
     restart: unless-stopped
     depends_on:
       - backend
@@ -68,6 +70,8 @@ services:
     depends_on:
       - backend
       - frontend
+    environment:
+      SITE_DOMAIN_SUFFIX: ${SITE_DOMAIN_SUFFIX:-localhost}
     ports:
       - "80:80"
 

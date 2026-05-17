@@ -43,8 +43,8 @@ describe("PublishSiteDialog", () => {
     const dialog = await screen.findByRole("dialog");
     const domainsInput = within(dialog).getByLabelText("Domains");
 
-    await userEvent.type(domainsInput, "demo.underhear.cn");
+    await userEvent.type(domainsInput, "demo.localhost");
 
-    expect(domainsInput).toHaveValue("demo.underhear.cn");
+    expect(domainsInput).toHaveValue("demo.localhost");
   });
 });

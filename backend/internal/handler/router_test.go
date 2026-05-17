@@ -503,7 +503,7 @@ func TestDownloadObjectEncodesFilenameHeadersAndAddsUTF8Charset(t *testing.T) {
 
 	createBucket(t, router, "download-bucket")
 
-	req := httptest.NewRequest(http.MethodPut, "/api/v1/buckets/download-bucket/objects/docs/report.txt", strings.NewReader("我是 UnderHear"))
+	req := httptest.NewRequest(http.MethodPut, "/api/v1/buckets/download-bucket/objects/docs/report.txt", strings.NewReader("我是 Light OSS"))
 	req.Header.Set("Authorization", "Bearer dev-token")
 	req.Header.Set("X-Object-Visibility", "public")
 	req.Header.Set("X-Original-Filename", url.PathEscape("中文报告.txt"))
@@ -520,7 +520,7 @@ func TestDownloadObjectEncodesFilenameHeadersAndAddsUTF8Charset(t *testing.T) {
 	if getRec.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d", getRec.Code)
 	}
-	if body := getRec.Body.String(); body != "我是 UnderHear" {
+	if body := getRec.Body.String(); body != "我是 Light OSS" {
 		t.Fatalf("unexpected body %q", body)
 	}
 	if got := getRec.Header().Get("Content-Type"); got != "text/plain; charset=utf-8" {
@@ -846,7 +846,7 @@ func TestPublishSiteUploadSuccess(t *testing.T) {
 			"bucket":        "websites",
 			"parent_prefix": "deployments/",
 			"domains": mustMarshalJSON(t, []string{
-				"demo.underhear.cn",
+				"demo.localhost",
 			}),
 			"manifest": mustMarshalJSON(t, []map[string]string{
 				{"file_field": "file_0", "relative_path": "dist/index.html"},
@@ -924,7 +924,7 @@ func TestPublishSiteUploadOverwritesExistingObjects(t *testing.T) {
 			"bucket":        "websites",
 			"parent_prefix": "deployments/",
 			"domains": mustMarshalJSON(t, []string{
-				"overwrite.underhear.cn",
+				"overwrite.localhost",
 			}),
 			"manifest": mustMarshalJSON(t, []map[string]string{
 				{"file_field": "file_0", "relative_path": "dist/index.html"},
@@ -993,7 +993,7 @@ func TestPublishSiteFileSuccess(t *testing.T) {
 			"bucket":        "websites",
 			"parent_prefix": "deployments/",
 			"domains": mustMarshalJSON(t, []string{
-				"demo.underhear.cn",
+				"demo.localhost",
 			}),
 		},
 		map[string]multipartUploadFile{
@@ -1058,7 +1058,7 @@ func TestPublishSiteFileSupportsBucketRoot(t *testing.T) {
 		map[string]string{
 			"bucket": "websites",
 			"domains": mustMarshalJSON(t, []string{
-				"root.underhear.cn",
+				"root.localhost",
 			}),
 		},
 		map[string]multipartUploadFile{
@@ -1103,7 +1103,7 @@ func TestPublishSiteFileRequiresFile(t *testing.T) {
 		map[string]string{
 			"bucket": "websites",
 			"domains": mustMarshalJSON(t, []string{
-				"demo.underhear.cn",
+				"demo.localhost",
 			}),
 		},
 		nil,
@@ -1130,7 +1130,7 @@ func TestPublishSiteFileRollsBackStorageOnDomainConflict(t *testing.T) {
 	createSite(t, router, `{
 		"bucket":"other-sites",
 		"root_prefix":"existing/",
-		"domains":["demo.underhear.cn"]
+		"domains":["demo.localhost"]
 	}`)
 
 	req := newMultipartBatchUploadRequest(
@@ -1139,7 +1139,7 @@ func TestPublishSiteFileRollsBackStorageOnDomainConflict(t *testing.T) {
 		map[string]string{
 			"bucket": "websites",
 			"domains": mustMarshalJSON(t, []string{
-				"demo.underhear.cn",
+				"demo.localhost",
 			}),
 		},
 		map[string]multipartUploadFile{
@@ -1188,7 +1188,7 @@ func TestPublishSiteUploadRejectsMixedTopLevelFolders(t *testing.T) {
 		map[string]string{
 			"bucket": "websites",
 			"domains": mustMarshalJSON(t, []string{
-				"demo.underhear.cn",
+				"demo.localhost",
 			}),
 			"manifest": mustMarshalJSON(t, []map[string]string{
 				{"file_field": "file_0", "relative_path": "dist/index.html"},
@@ -1239,7 +1239,7 @@ func TestPublishSiteUploadRollsBackObjectsOnDomainConflict(t *testing.T) {
 	createSite(t, router, `{
 		"bucket":"other-sites",
 		"root_prefix":"existing/",
-		"domains":["demo.underhear.cn"]
+		"domains":["demo.localhost"]
 	}`)
 
 	req := newMultipartBatchUploadRequest(
@@ -1248,7 +1248,7 @@ func TestPublishSiteUploadRollsBackObjectsOnDomainConflict(t *testing.T) {
 		map[string]string{
 			"bucket": "websites",
 			"domains": mustMarshalJSON(t, []string{
-				"demo.underhear.cn",
+				"demo.localhost",
 			}),
 			"manifest": mustMarshalJSON(t, []map[string]string{
 				{"file_field": "file_0", "relative_path": "dist/index.html"},
@@ -1310,7 +1310,7 @@ func TestPublishObjectSiteSuccessFromPrivateFile(t *testing.T) {
 		bytes.NewBufferString(`{
 			"bucket":"websites",
 			"object_key":"docs/landing.txt",
-			"domains":["demo.underhear.cn"]
+			"domains":["demo.localhost"]
 		}`),
 	)
 	req.Header.Set("Authorization", "Bearer dev-token")
@@ -1384,7 +1384,7 @@ func TestPublishObjectSiteSuccessFromRootFile(t *testing.T) {
 		bytes.NewBufferString(`{
 			"bucket":"websites",
 			"object_key":"home.txt",
-			"domains":["root.underhear.cn"],
+			"domains":["root.localhost"],
 			"enabled":false,
 			"spa_fallback":false,
 			"error_document":"404.txt"
@@ -1434,7 +1434,7 @@ func TestPublishObjectSiteRollsBackVisibilityOnDomainConflict(t *testing.T) {
 	createSite(t, router, `{
 		"bucket":"other-sites",
 		"root_prefix":"existing/",
-		"domains":["demo.underhear.cn"]
+		"domains":["demo.localhost"]
 	}`)
 
 	req := httptest.NewRequest(
@@ -1443,7 +1443,7 @@ func TestPublishObjectSiteRollsBackVisibilityOnDomainConflict(t *testing.T) {
 		bytes.NewBufferString(`{
 			"bucket":"websites",
 			"object_key":"docs/landing.txt",
-			"domains":["demo.underhear.cn"]
+			"domains":["demo.localhost"]
 		}`),
 	)
 	req.Header.Set("Authorization", "Bearer dev-token")
@@ -1490,7 +1490,7 @@ func TestPublishObjectSiteReturnsObjectNotFound(t *testing.T) {
 		bytes.NewBufferString(`{
 			"bucket":"websites",
 			"object_key":"docs/missing.txt",
-			"domains":["demo.underhear.cn"]
+			"domains":["demo.localhost"]
 		}`),
 	)
 	req.Header.Set("Authorization", "Bearer dev-token")
@@ -2263,7 +2263,7 @@ func TestDeleteBucketCascadesAndCleansStorage(t *testing.T) {
 	createSite(t, router, `{
 		"bucket":"wipe-bucket",
 		"root_prefix":"docs/",
-		"domains":["demo.underhear.cn"]
+		"domains":["demo.localhost"]
 	}`)
 
 	deleteReq := httptest.NewRequest(http.MethodDelete, "/api/v1/buckets/wipe-bucket", nil)
@@ -2632,7 +2632,7 @@ func TestSiteManagementCRUDAndDomainConflict(t *testing.T) {
 	created := createSite(t, router, `{
 		"bucket":"websites",
 		"root_prefix":"demo",
-		"domains":["demo.underhear.cn"],
+		"domains":["demo.localhost"],
 		"enabled":true
 	}`)
 	if created.RootPrefix != "demo/" {
@@ -2669,7 +2669,7 @@ func TestSiteManagementCRUDAndDomainConflict(t *testing.T) {
 		bytes.NewBufferString(`{
 			"bucket":"websites",
 			"root_prefix":"demo/",
-			"domains":["demo.underhear.cn","www.underhear.cn"],
+			"domains":["demo.localhost","www.localhost"],
 			"enabled":false,
 			"index_document":"home.html",
 			"error_document":"404.html",
@@ -2698,7 +2698,7 @@ func TestSiteManagementCRUDAndDomainConflict(t *testing.T) {
 		bytes.NewBufferString(`{
 			"bucket":"other-sites",
 			"root_prefix":"app/",
-			"domains":["demo.underhear.cn"]
+			"domains":["demo.localhost"]
 		}`),
 	)
 	conflictReq.Header.Set("Authorization", "Bearer dev-token")
@@ -2729,7 +2729,7 @@ func TestSiteManagementRejectsDeepSubdomains(t *testing.T) {
 		bytes.NewBufferString(`{
 			"bucket":"websites",
 			"root_prefix":"demo/",
-			"domains":["www.demo.underhear.cn"]
+			"domains":["www.demo.localhost"]
 		}`),
 	)
 	req.Header.Set("Authorization", "Bearer dev-token")
@@ -2752,7 +2752,7 @@ func TestSitePublicRoutesServeIndexAssetsAndHostMapping(t *testing.T) {
 	site := createSite(t, router, `{
 		"bucket":"websites",
 		"root_prefix":"demo/",
-		"domains":["demo.underhear.cn"]
+		"domains":["demo.localhost"]
 	}`)
 
 	indexReq := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/sites/%d", site.ID), nil)
@@ -2796,7 +2796,7 @@ func TestSitePublicRoutesServeIndexAssetsAndHostMapping(t *testing.T) {
 	}
 
 	hostReq := httptest.NewRequest(http.MethodGet, "/assets/app.js", nil)
-	hostReq.Host = "demo.underhear.cn"
+	hostReq.Host = "demo.localhost"
 	hostRec := httptest.NewRecorder()
 	router.ServeHTTP(hostRec, hostReq)
 	if hostRec.Code != http.StatusOK {
@@ -2818,12 +2818,12 @@ func TestSitePublicRoutesFallbackAndPrivateProtection(t *testing.T) {
 	site := createSite(t, router, `{
 		"bucket":"websites",
 		"root_prefix":"demo/",
-		"domains":["demo.underhear.cn"],
+		"domains":["demo.localhost"],
 		"spa_fallback":true
 	}`)
 
 	spaReq := httptest.NewRequest(http.MethodGet, "/dashboard/settings", nil)
-	spaReq.Host = "demo.underhear.cn"
+	spaReq.Host = "demo.localhost"
 	spaRec := httptest.NewRecorder()
 	router.ServeHTTP(spaRec, spaReq)
 	if spaRec.Code != http.StatusOK {
@@ -2834,7 +2834,7 @@ func TestSitePublicRoutesFallbackAndPrivateProtection(t *testing.T) {
 	}
 
 	privateReq := httptest.NewRequest(http.MethodGet, "/secret.txt", nil)
-	privateReq.Host = "demo.underhear.cn"
+	privateReq.Host = "demo.localhost"
 	privateRec := httptest.NewRecorder()
 	router.ServeHTTP(privateRec, privateReq)
 	if privateRec.Code != http.StatusOK {
@@ -2850,7 +2850,7 @@ func TestSitePublicRoutesFallbackAndPrivateProtection(t *testing.T) {
 		bytes.NewBufferString(`{
 			"bucket":"websites",
 			"root_prefix":"demo/",
-			"domains":["demo.underhear.cn"],
+			"domains":["demo.localhost"],
 			"spa_fallback":false,
 			"error_document":"404.html"
 		}`),
@@ -2864,7 +2864,7 @@ func TestSitePublicRoutesFallbackAndPrivateProtection(t *testing.T) {
 	}
 
 	missingReq := httptest.NewRequest(http.MethodGet, "/missing/page", nil)
-	missingReq.Host = "demo.underhear.cn"
+	missingReq.Host = "demo.localhost"
 	missingRec := httptest.NewRecorder()
 	router.ServeHTTP(missingRec, missingReq)
 	if missingRec.Code != http.StatusNotFound {
@@ -2880,7 +2880,7 @@ func TestSitePublicRoutesFallbackAndPrivateProtection(t *testing.T) {
 		bytes.NewBufferString(`{
 			"bucket":"websites",
 			"root_prefix":"demo/",
-			"domains":["demo.underhear.cn"],
+			"domains":["demo.localhost"],
 			"enabled":false
 		}`),
 	)
@@ -2893,7 +2893,7 @@ func TestSitePublicRoutesFallbackAndPrivateProtection(t *testing.T) {
 	}
 
 	disabledSiteReq := httptest.NewRequest(http.MethodGet, "/anything", nil)
-	disabledSiteReq.Host = "demo.underhear.cn"
+	disabledSiteReq.Host = "demo.localhost"
 	disabledSiteRec := httptest.NewRecorder()
 	router.ServeHTTP(disabledSiteRec, disabledSiteReq)
 	if disabledSiteRec.Code != http.StatusNotFound {
@@ -2908,11 +2908,11 @@ func TestSiteNoRouteDoesNotConsumeAPIOrUnknownHosts(t *testing.T) {
 	createSite(t, router, `{
 		"bucket":"websites",
 		"root_prefix":"demo/",
-		"domains":["demo.underhear.cn"]
+		"domains":["demo.localhost"]
 	}`)
 
 	apiReq := httptest.NewRequest(http.MethodGet, "/api/v1/unknown", nil)
-	apiReq.Host = "demo.underhear.cn"
+	apiReq.Host = "demo.localhost"
 	apiRec := httptest.NewRecorder()
 	router.ServeHTTP(apiRec, apiReq)
 	if apiRec.Code != http.StatusNotFound {
@@ -2920,7 +2920,7 @@ func TestSiteNoRouteDoesNotConsumeAPIOrUnknownHosts(t *testing.T) {
 	}
 
 	hostReq := httptest.NewRequest(http.MethodGet, "/", nil)
-	hostReq.Host = "unknown.underhear.cn"
+	hostReq.Host = "unknown.localhost"
 	hostRec := httptest.NewRecorder()
 	router.ServeHTTP(hostRec, hostReq)
 	if hostRec.Code != http.StatusNotFound {
@@ -2965,6 +2965,7 @@ func newTestRouterWithStorageRootAndDB(t *testing.T, maxUploadSize int64) (*gin.
 		AppEnv:                     "development",
 		AppAddr:                    ":0",
 		PublicBaseURL:              "http://example.com",
+		SiteDomainSuffix:           "localhost",
 		StorageRoot:                filepath.ToSlash(root),
 		MaxUploadSizeBytes:         maxUploadSize,
 		MaxMultipartMemoryBytes:    8 * 1024 * 1024,
@@ -2985,7 +2986,7 @@ func newTestRouterWithStorageRootAndDB(t *testing.T, maxUploadSize int64) (*gin.
 	storageQuotaService := service.NewStorageQuotaService(zap.NewNop(), root, localStorage, objectRepo, recycleRepo, storageQuotaRepo)
 	objectService := service.NewObjectService(db, bucketRepo, objectRepo, recycleRepo, localStorage, storageQuotaService)
 	recycleBinService := service.NewRecycleBinService(db, bucketRepo, objectRepo, recycleRepo, storageQuotaService)
-	siteService := service.NewSiteService(bucketRepo, siteRepo, objectService)
+	siteService := service.NewSiteService(bucketRepo, siteRepo, objectService, cfg.SiteDomainSuffix)
 	return handler.NewRouter(handler.Dependencies{
 		Config:              cfg,
 		Logger:              zap.NewNop(),

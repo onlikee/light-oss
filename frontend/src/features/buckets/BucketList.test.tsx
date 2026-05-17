@@ -29,8 +29,8 @@ describe("BucketList", () => {
     const rootPrefix =
       "nested/averyveryveryveryveryveryveryveryveryveryverylong-folder-prefix/";
     const domains = [
-      "averyveryveryveryveryveryveryveryveryveryverylong-subdomain.underhear.cn",
-      "averyveryveryveryveryveryveryveryveryveryverylong-www.underhear.cn",
+      "averyveryveryveryveryveryveryveryveryveryverylong-subdomain.localhost",
+      "averyveryveryveryveryveryveryveryveryveryverylong-www.localhost",
     ];
 
     renderWithApp(
@@ -82,7 +82,7 @@ function createSite(overrides: Partial<Site> = {}): Site {
     index_document: "index.html",
     error_document: "404.html",
     spa_fallback: false,
-    domains: ["demo.underhear.cn"],
+    domains: ["demo.localhost"],
     created_at: "2026-04-07T01:00:00Z",
     updated_at: "2026-04-07T02:00:00Z",
     ...overrides,

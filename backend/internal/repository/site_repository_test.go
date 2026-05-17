@@ -42,13 +42,13 @@ func TestSiteRepositoryFindByDomainPreloadsDomains(t *testing.T) {
 			IndexDocument: "index.html",
 			ErrorDocument: "",
 			SPAFallback:   false,
-		}, []string{"www.underhear.cn", "demo.underhear.cn"})
+		}, []string{"www.localhost", "demo.localhost"})
 		return createErr
 	}); err != nil {
 		t.Fatalf("create site: %v", err)
 	}
 
-	site, err := repo.FindByDomain(ctx, "demo.underhear.cn")
+	site, err := repo.FindByDomain(ctx, "demo.localhost")
 	if err != nil {
 		t.Fatalf("find by domain: %v", err)
 	}
@@ -58,7 +58,7 @@ func TestSiteRepositoryFindByDomainPreloadsDomains(t *testing.T) {
 	if len(site.Domains) != 2 {
 		t.Fatalf("expected 2 domains, got %d", len(site.Domains))
 	}
-	if site.Domains[0].Domain != "demo.underhear.cn" {
+	if site.Domains[0].Domain != "demo.localhost" {
 		t.Fatalf("expected domains to be sorted, got %+v", site.Domains)
 	}
 }
@@ -89,7 +89,7 @@ func TestSiteRepositoryDuplicateDomainFails(t *testing.T) {
 			RootPrefix:    "demo/",
 			Enabled:       true,
 			IndexDocument: "index.html",
-		}, []string{"demo.underhear.cn"})
+		}, []string{"demo.localhost"})
 		return createErr
 	}); err != nil {
 		t.Fatalf("create site: %v", err)
@@ -101,7 +101,7 @@ func TestSiteRepositoryDuplicateDomainFails(t *testing.T) {
 			RootPrefix:    "other/",
 			Enabled:       true,
 			IndexDocument: "index.html",
-		}, []string{"demo.underhear.cn"})
+		}, []string{"demo.localhost"})
 		return createErr
 	})
 	if err == nil {

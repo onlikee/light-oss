@@ -79,11 +79,13 @@ Light OSS 由四部分组成：
 
 本地直跑优先读取根目录 `.env.personal`，不存在时再读取 `.env`；Docker Compose 仍按根目录 `.env` 工作。以下变量在两种模式下的推荐值不同：
 
-| 变量                        | 本地开发建议                                                        | Docker 网关建议               | 说明                                     |
-| --------------------------- | ------------------------------------------------------------------- | ----------------------------- | ---------------------------------------- |
-| `APP_PUBLIC_BASE_URL`       | `http://localhost:8080`                                             | `http://api.underhear.cn`     | 影响签名下载链接生成。                   |
-| `APP_STORAGE_ROOT`          | `./light-oss-data/storage` 或 Windows 下 `.\light-oss-data\storage` | `/data/storage`               | Compose 中后端卷挂载在 `/data/storage`。 |
-| `VITE_DEFAULT_API_BASE_URL` | `http://localhost:8080`                                             | `http://api.underhear.cn`     | 前端首次加载时默认使用的 API 地址。      |
+| 变量                        | 本地开发建议                                                        | Docker 网关建议           | 说明                                     |
+| --------------------------- | ------------------------------------------------------------------- | ------------------------- | ---------------------------------------- |
+| `APP_PUBLIC_BASE_URL`       | `http://localhost:8080`                                             | `http://api.localhost`    | 影响签名下载链接生成。                   |
+| `APP_SITE_DOMAIN_SUFFIX`    | `localhost`                                                         | `localhost`               | 站点域名允许绑定的根后缀。               |
+| `APP_STORAGE_ROOT`          | `./light-oss-data/storage` 或 Windows 下 `.\light-oss-data\storage` | `/data/storage`           | Compose 中后端卷挂载在 `/data/storage`。 |
+| `VITE_DEFAULT_API_BASE_URL` | `http://localhost:8080`                                             | `http://api.localhost`    | 前端首次加载时默认使用的 API 地址。      |
+| `VITE_SITE_DOMAIN_SUFFIX`   | `localhost`                                                         | `localhost`               | 前端站点域名输入示例使用的后缀。         |
 
 ### 本地运行
 
@@ -99,6 +101,7 @@ Light OSS 由四部分组成：
 APP_ENV=development
 APP_ADDR=:8080
 APP_PUBLIC_BASE_URL=http://localhost:8080
+APP_SITE_DOMAIN_SUFFIX=localhost
 APP_STORAGE_ROOT=./light-oss-data/storage
 APP_BEARER_TOKENS=light-oss
 APP_SIGNING_SECRET=change-me-in-local-dev
@@ -107,6 +110,7 @@ DB_DSN=root:112233ss@tcp(localhost:3306)/light-oss?charset=utf8mb4&parseTime=Tru
 
 VITE_DEFAULT_API_BASE_URL=http://localhost:8080
 VITE_DEFAULT_BEARER_TOKEN=light-oss
+VITE_SITE_DOMAIN_SUFFIX=localhost
 ```
 
 #### 2. 启动 MySQL
@@ -161,10 +165,13 @@ npm run dev
 Docker Compose 仍默认读取根目录 `.env`，不会自动采用 `.env.personal`。如果你要走网关域名模式，建议至少改成下面这些值：
 
 ```env
-APP_PUBLIC_BASE_URL=http://api.underhear.cn
+APP_PUBLIC_BASE_URL=http://api.localhost
+APP_SITE_DOMAIN_SUFFIX=localhost
 APP_STORAGE_ROOT=/data/storage
-VITE_DEFAULT_API_BASE_URL=http://api.underhear.cn
+VITE_DEFAULT_API_BASE_URL=http://api.localhost
 VITE_DEFAULT_BEARER_TOKEN=light-oss
+VITE_SITE_DOMAIN_SUFFIX=localhost
+SITE_DOMAIN_SUFFIX=localhost
 ```
 
 说明：
@@ -172,15 +179,16 @@ VITE_DEFAULT_BEARER_TOKEN=light-oss
 - `gateway` 是唯一对外入口，暴露端口 `80`
 - `backend` 与 `frontend` 在 Compose 内部互通，但默认不直接暴露给宿主机
 - `APP_STORAGE_ROOT` 在 Compose 下应指向容器内路径 `/data/storage`
+- `APP_SITE_DOMAIN_SUFFIX`、`VITE_SITE_DOMAIN_SUFFIX`、`SITE_DOMAIN_SUFFIX` 应保持一致；如果你改成 `example.com`，站点示例域名应改为 `demo.example.com`
 
 #### 2. 配置 hosts
 
 本地验证域名路由时，通常需要把这些域名指向 `127.0.0.1`：
 
 ```text
-127.0.0.1 console.underhear.cn
-127.0.0.1 api.underhear.cn
-127.0.0.1 demo.underhear.cn
+127.0.0.1 console.localhost
+127.0.0.1 api.localhost
+127.0.0.1 demo.localhost
 ```
 
 #### 3. 启动服务
@@ -197,16 +205,16 @@ make up
 
 #### 4. 访问地址
 
-- 控制台：`http://console.underhear.cn`
-- API：`http://api.underhear.cn`
+- 控制台：`http://console.localhost`
+- API：`http://api.localhost`
 - MySQL：`localhost:3306`
-- 站点示例：`http://demo.underhear.cn`
+- 站点示例：`http://demo.localhost`
 
 #### 5. 网关拓扑说明
 
-- `console.underhear.cn` -> frontend
-- `api.underhear.cn` -> backend API
-- `*.underhear.cn` -> backend 网站托管解析
+- `console.localhost` -> frontend
+- `api.localhost` -> backend API
+- `*.localhost` -> backend 网站托管解析
 
 需要特别注意：
 
@@ -240,6 +248,7 @@ make up
 | `APP_ENV`                            | `development`                                                                                             | 后端运行环境，常见值为 `development` 或 `production`。     |
 | `APP_ADDR`                           | `:8080`                                                                                                   | 后端 HTTP 服务监听地址。                                   |
 | `APP_PUBLIC_BASE_URL`                | `http://localhost:8080`                                                                                   | 生成签名下载链接等场景使用的对外基础地址。                 |
+| `APP_SITE_DOMAIN_SUFFIX`             | `localhost`                                                                                               | 站点域名允许绑定的根后缀，域名必须是该后缀下的单层子域名。 |
 | `APP_STORAGE_ROOT`                   | `./light-oss-data/storage`                                                                                | 对象内容存储根目录；Compose 模式建议改为 `/data/storage`。 |
 | `APP_MAX_UPLOAD_SIZE_BYTES`          | `1073741824`                                                                                              | 单次上传请求允许的最大体积，单位字节。                     |
 | `APP_MAX_MULTIPART_MEMORY_BYTES`     | `8388608`                                                                                                 | 处理 `multipart/form-data` 时允许驻留内存的大小。          |
@@ -262,6 +271,13 @@ make up
 | --------------------------- | ----------------------- | --------------------------------------- |
 | `VITE_DEFAULT_API_BASE_URL` | `http://localhost:8080` | 前端首次加载时默认填入的 API Base URL。 |
 | `VITE_DEFAULT_BEARER_TOKEN` | `light-oss`             | 前端首次加载时默认填入的 Bearer Token。 |
+| `VITE_SITE_DOMAIN_SUFFIX`   | `localhost`             | 前端站点域名输入示例使用的后缀。        |
+
+### Gateway
+
+| 变量                 | 示例值      | 说明                                                       |
+| -------------------- | ----------- | ---------------------------------------------------------- |
+| `SITE_DOMAIN_SUFFIX` | `localhost` | nginx 模板使用的站点域名后缀，应与后端允许的后缀保持一致。 |
 
 ## curl 示例
 
@@ -276,7 +292,7 @@ BASE_URL=http://localhost:8080
 如果你是“Docker Compose + gateway 域名方式”，请改成：
 
 ```bash
-BASE_URL=http://api.underhear.cn
+BASE_URL=http://api.localhost
 ```
 
 其余示例通用：
@@ -287,7 +303,7 @@ BUCKET=demo-bucket
 PUBLIC_KEY=docs/hello.txt
 PRIVATE_KEY=private/secret.txt
 SITE_PREFIX=site-demo/
-SITE_DOMAIN=demo.underhear.cn
+SITE_DOMAIN=demo.localhost
 SITE_ID=1
 ```
 
@@ -494,7 +510,7 @@ curl -X POST "$BASE_URL/api/v1/sign/download" \
 
 ### 19. 创建站点绑定
 
-站点域名必须匹配 `*.underhear.cn`，并且被访问的站点资源必须是 public 对象。
+站点域名必须是 `APP_SITE_DOMAIN_SUFFIX` 下的单层子域名，并且被访问的站点资源必须是 public 对象。默认配置下可以使用 `demo.localhost`。
 
 ```bash
 curl -X POST "$BASE_URL/api/v1/sites" \
@@ -557,7 +573,7 @@ curl -H "Host: $SITE_DOMAIN" http://127.0.0.1/
 
 ## 前端使用说明
 
-前端本地开发地址默认是 `http://localhost:3000`，Docker 网关方式建议通过 `http://console.underhear.cn` 打开。
+前端本地开发地址默认是 `http://localhost:3000`，Docker 网关方式建议通过 `http://console.localhost` 打开。
 
 ### `/settings`
 
@@ -620,7 +636,7 @@ curl -H "Host: $SITE_DOMAIN" http://127.0.0.1/
 通常是 `APP_PUBLIC_BASE_URL` 配错了。这个值会参与签名下载 URL 的生成：
 
 - 本地直连后端：建议 `http://localhost:8080`
-- 走 gateway 域名：建议 `http://api.underhear.cn`
+- 走 gateway 域名：建议 `http://api.localhost`
 
 ### 4. Docker / MySQL / 后端启动失败怎么办？
 
@@ -634,13 +650,13 @@ curl -H "Host: $SITE_DOMAIN" http://127.0.0.1/
 
 后端虽然会自动等待数据库并执行 migration，但如果数据库账户、密码或 DSN 本身错误，仍然会启动失败。
 
-### 5. 为什么 Docker 启动后打不开 `console.underhear.cn` 或 `api.underhear.cn`？
+### 5. 为什么 Docker 启动后打不开 `console.localhost` 或 `api.localhost`？
 
 通常是 hosts 没配，或者浏览器请求没有落到本机。请确认本地 hosts 中已经加入：
 
 ```text
-127.0.0.1 console.underhear.cn
-127.0.0.1 api.underhear.cn
+127.0.0.1 console.localhost
+127.0.0.1 api.localhost
 ```
 
 同时确认 Compose 已经启动并且 `gateway` 成功监听 `80` 端口。
@@ -655,13 +671,13 @@ curl -H "Host: $SITE_DOMAIN" http://127.0.0.1/
 建议：
 
 - 本地直连开发：前端使用 `http://localhost:8080`
-- Docker 网关模式：前端使用 `http://api.underhear.cn`
+- Docker 网关模式：前端使用 `http://api.localhost`
 
 ### 7. 为什么站点域名不生效或返回 404？
 
 请依次检查：
 
-- 域名是否匹配 `*.underhear.cn`
+- 域名是否是 `APP_SITE_DOMAIN_SUFFIX` 下的单层子域名
 - hosts 是否把该域名指向了 `127.0.0.1`
 - 站点绑定里的 `bucket` 与 `root_prefix` 是否正确
 - `index_document` 是否真实存在
@@ -679,7 +695,7 @@ curl -H "Host: $SITE_DOMAIN" http://127.0.0.1/
 本地排查时可以先用：
 
 ```bash
-curl -H "Host: demo.underhear.cn" http://127.0.0.1/
+curl -H "Host: demo.localhost" http://127.0.0.1/
 ```
 
 ## 已知限制

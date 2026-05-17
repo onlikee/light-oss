@@ -34,20 +34,23 @@ type SiteContent struct {
 }
 
 type SiteService struct {
-	bucketRepo    *repository.BucketRepository
-	siteRepo      *repository.SiteRepository
-	objectService *ObjectService
+	bucketRepo       *repository.BucketRepository
+	siteRepo         *repository.SiteRepository
+	objectService    *ObjectService
+	siteDomainSuffix string
 }
 
 func NewSiteService(
 	bucketRepo *repository.BucketRepository,
 	siteRepo *repository.SiteRepository,
 	objectService *ObjectService,
+	siteDomainSuffix string,
 ) *SiteService {
 	return &SiteService{
-		bucketRepo:    bucketRepo,
-		siteRepo:      siteRepo,
-		objectService: objectService,
+		bucketRepo:       bucketRepo,
+		siteRepo:         siteRepo,
+		objectService:    objectService,
+		siteDomainSuffix: normalizeSiteDomainSuffix(siteDomainSuffix),
 	}
 }
 
@@ -229,7 +232,7 @@ func (s *SiteService) buildSiteInput(ctx context.Context, input SiteInput) (*mod
 	if err != nil {
 		return nil, nil, err
 	}
-	domains, err := NormalizeSiteDomains(input.Domains)
+	domains, err := NormalizeSiteDomains(input.Domains, s.siteDomainSuffix)
 	if err != nil {
 		return nil, nil, err
 	}

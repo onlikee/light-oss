@@ -438,7 +438,7 @@ describe("ExplorerTable", () => {
     const dialog = await screen.findByRole("dialog");
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "https://oss.underhear.cn/api/v1/buckets/demo/objects/docs/test.md",
+      "https://api.localhost/api/v1/buckets/demo/objects/docs/test.md",
       expect.objectContaining({
         signal: expect.any(AbortSignal),
       }),
@@ -643,7 +643,7 @@ describe("ExplorerTable", () => {
       within(fullscreenDialog).getByAltText("file preview"),
     ).toHaveAttribute(
       "src",
-      "https://oss.underhear.cn/api/v1/buckets/demo/objects/images/avatar.png",
+      "https://api.localhost/api/v1/buckets/demo/objects/images/avatar.png",
     );
   });
 
@@ -664,7 +664,7 @@ describe("ExplorerTable", () => {
 
     expect(within(dialog).getByTitle("file preview")).toHaveAttribute(
       "src",
-      "https://oss.underhear.cn/api/v1/buckets/demo/objects/docs/test.pdf#toolbar=0&navpanes=0&pagemode=none&view=Fit&zoom=page-fit",
+      "https://api.localhost/api/v1/buckets/demo/objects/docs/test.pdf#toolbar=0&navpanes=0&pagemode=none&view=Fit&zoom=page-fit",
     );
   });
 
@@ -750,7 +750,7 @@ describe("ExplorerTable", () => {
       });
 
       expect(fetchMock).toHaveBeenCalledWith(
-        `https://oss.underhear.cn/api/v1/buckets/demo/objects/docs/${name}`,
+        `https://api.localhost/api/v1/buckets/demo/objects/docs/${name}`,
         expect.objectContaining({
           signal: expect.any(AbortSignal),
         }),
@@ -852,7 +852,7 @@ function ExplorerTableHarness({
     <ExplorerTable
       bucket="demo"
       buildPublicUrl={(objectKey) =>
-        `https://oss.underhear.cn/api/v1/buckets/demo/objects/${objectKey}`
+        `https://api.localhost/api/v1/buckets/demo/objects/${objectKey}`
       }
       deletingPath=""
       downloadingFilePath=""

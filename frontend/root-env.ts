@@ -4,6 +4,7 @@ import path from "node:path";
 export const defaultFrontendEnvKeys = [
   "VITE_DEFAULT_API_BASE_URL",
   "VITE_DEFAULT_BEARER_TOKEN",
+  "VITE_SITE_DOMAIN_SUFFIX",
 ] as const;
 
 type DefaultFrontendEnvKey = (typeof defaultFrontendEnvKeys)[number];

@@ -9,7 +9,7 @@ vi.mock("./client", () => ({
 }));
 
 const settings: AppSettings = {
-  apiBaseUrl: "https://oss.underhear.cn",
+  apiBaseUrl: "https://api.localhost",
   bearerToken: "dev-token",
 };
 

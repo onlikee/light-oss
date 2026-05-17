@@ -33,6 +33,7 @@ import {
   normalizeFolderUploadParentPrefix,
 } from "@/lib/folder-upload";
 import { useI18n } from "@/lib/i18n";
+import { siteDomainPlaceholder } from "@/lib/site-domain";
 
 const folderInputAttributes: Record<string, string> = {
   directory: "",
@@ -373,7 +374,7 @@ export function UploadAndPublishSiteDialog({
                 disabled={pending}
                 id="upload-publish-domains"
                 onChange={(event) => setDomainsInput(event.target.value)}
-                placeholder="demo.underhear.cn, www.underhear.cn"
+                placeholder={siteDomainPlaceholder}
                 value={domainsInput}
               />
               <FieldDescription>

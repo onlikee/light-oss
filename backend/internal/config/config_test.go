@@ -30,6 +30,9 @@ func TestLoadReadsRootEnvWhenPersonalMissing(t *testing.T) {
 	if cfg.StorageRoot != "./storage-from-env" {
 		t.Fatalf("expected APP_STORAGE_ROOT from .env, got %q", cfg.StorageRoot)
 	}
+	if cfg.SiteDomainSuffix != "localhost" {
+		t.Fatalf("expected default APP_SITE_DOMAIN_SUFFIX, got %q", cfg.SiteDomainSuffix)
+	}
 }
 
 func TestLoadReadsPersonalEnvBeforeRootEnv(t *testing.T) {
@@ -117,6 +120,50 @@ func TestLoadAllowsShellEnvToOverridePersonalEnv(t *testing.T) {
 	}
 }
 
+func TestLoadNormalizesSiteDomainSuffix(t *testing.T) {
+	resetConfigEnv(t)
+	prepareBackendWorkspace(t, map[string]string{
+		".env": strings.Join([]string{
+			"DB_DSN=root-env-dsn",
+			"APP_STORAGE_ROOT=./storage-from-env",
+			"APP_BEARER_TOKENS=root-token",
+			"APP_SIGNING_SECRET=root-secret",
+			"APP_SITE_DOMAIN_SUFFIX=Example.Com.",
+			"",
+		}, "\n"),
+	})
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if cfg.SiteDomainSuffix != "example.com" {
+		t.Fatalf("expected normalized APP_SITE_DOMAIN_SUFFIX, got %q", cfg.SiteDomainSuffix)
+	}
+}
+
+func TestLoadRejectsInvalidSiteDomainSuffix(t *testing.T) {
+	resetConfigEnv(t)
+	prepareBackendWorkspace(t, map[string]string{
+		".env": strings.Join([]string{
+			"DB_DSN=root-env-dsn",
+			"APP_STORAGE_ROOT=./storage-from-env",
+			"APP_BEARER_TOKENS=root-token",
+			"APP_SIGNING_SECRET=root-secret",
+			"APP_SITE_DOMAIN_SUFFIX=http://example.com",
+			"",
+		}, "\n"),
+	})
+
+	_, err := Load()
+	if err == nil {
+		t.Fatal("expected Load() to reject invalid APP_SITE_DOMAIN_SUFFIX")
+	}
+	if !strings.Contains(err.Error(), "APP_SITE_DOMAIN_SUFFIX") {
+		t.Fatalf("expected APP_SITE_DOMAIN_SUFFIX validation error, got %v", err)
+	}
+}
+
 func prepareBackendWorkspace(t *testing.T, files map[string]string) {
 	t.Helper()
 
@@ -155,6 +202,7 @@ func resetConfigEnv(t *testing.T) {
 		"APP_ENV",
 		"APP_ADDR",
 		"APP_PUBLIC_BASE_URL",
+		"APP_SITE_DOMAIN_SUFFIX",
 		"DB_DSN",
 		"DB_MAX_OPEN_CONNS",
 		"DB_MAX_IDLE_CONNS",

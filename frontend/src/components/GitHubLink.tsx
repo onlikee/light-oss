@@ -5,7 +5,7 @@ import {
 } from "@/components/preference-toggle";
 import { cn } from "@/lib/utils";
 
-const repositoryUrl = "https://github.com/UnderHear-tools/light-oss";
+const repositoryUrl = "https://github.com/onlikee/light-oss";
 
 export function GitHubLink({
   className,

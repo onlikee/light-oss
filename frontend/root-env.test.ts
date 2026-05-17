@@ -32,12 +32,14 @@ describe("loadRootDefaultEnv", () => {
       [
         "VITE_DEFAULT_API_BASE_URL=http://from-personal",
         "VITE_DEFAULT_BEARER_TOKEN=personal-token",
+        "VITE_SITE_DOMAIN_SUFFIX=example.com",
       ].join("\n"),
     );
 
     expect(loadRootDefaultEnv(rootDir)).toEqual({
       VITE_DEFAULT_API_BASE_URL: "http://from-personal",
       VITE_DEFAULT_BEARER_TOKEN: "personal-token",
+      VITE_SITE_DOMAIN_SUFFIX: "example.com",
     });
   });
 

@@ -120,7 +120,7 @@ const enUS = {
   "sites.form.rootPrefix": "Root prefix",
   "sites.form.domains": "Domains",
   "sites.form.domainsDescription":
-    "Use single-level *.underhear.cn domains, separated by commas.",
+    "Use single-level domains under the configured site suffix, separated by commas.",
   "sites.form.enabled": "Enabled",
   "sites.form.indexDocument": "Index document",
   "sites.form.errorDocument": "Error document",
@@ -348,7 +348,7 @@ const enUS = {
   "sites.publish.rootPrefix": "Root prefix",
   "sites.publish.domains": "Domains",
   "sites.publish.domainsDescription":
-    "Use single-level *.underhear.cn domains, separated by commas.",
+    "Use single-level domains under the configured site suffix, separated by commas.",
   "sites.publish.indexDocument": "Index document",
   "sites.publish.errorDocument": "Error document",
   "sites.publish.spaFallback": "SPA fallback",
@@ -768,7 +768,7 @@ const zhCN: Record<keyof typeof enUS, string> = {
   "sites.publish.rootPrefix": "根前缀",
   "sites.publish.domains": "域名",
   "sites.publish.domainsDescription":
-    "只支持单层 *.underhear.cn 域名，多个值请用逗号分隔。",
+    "只支持配置后缀下的单层域名，多个值请用逗号分隔。",
   "sites.publish.indexDocument": "首页文档",
   "sites.publish.errorDocument": "错误页文档",
   "sites.publish.spaFallback": "SPA 回退",
@@ -930,7 +930,7 @@ const zhCN: Record<keyof typeof enUS, string> = {
   "sites.form.rootPrefix": "根前缀",
   "sites.form.domains": "域名",
   "sites.form.domainsDescription":
-    "只支持单层 *.underhear.cn 域名，多个值请用逗号分隔。",
+    "只支持配置后缀下的单层域名，多个值请用逗号分隔。",
   "sites.form.enabled": "启用状态",
   "sites.form.indexDocument": "首页文档",
   "sites.form.errorDocument": "错误页文档",

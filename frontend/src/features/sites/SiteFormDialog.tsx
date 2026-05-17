@@ -32,6 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useI18n } from "@/lib/i18n";
+import { siteDomainPlaceholder } from "@/lib/site-domain";
 
 const emptyBuckets: Bucket[] = [];
 
@@ -280,7 +281,7 @@ export function SiteFormDialog({
                 disabled={pending}
                 id="site-form-domains"
                 onChange={(event) => setDomainsInput(event.target.value)}
-                placeholder="demo.underhear.cn, www.underhear.cn"
+                placeholder={siteDomainPlaceholder}
                 value={domainsInput}
               />
               <FieldDescription>

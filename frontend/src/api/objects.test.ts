@@ -36,7 +36,7 @@ vi.mock("./client", () => ({
 }));
 
 const settings: AppSettings = {
-  apiBaseUrl: "https://oss.underhear.cn",
+  apiBaseUrl: "https://api.localhost",
   bearerToken: "dev-token",
 };
 
@@ -62,13 +62,13 @@ describe("objects api helpers", () => {
   });
 
   it("encodes dots in object keys for upload requests", async () => {
-    const file = new File(["sql"], "underhear.postgresql.sql", {
+    const file = new File(["sql"], "sample.postgresql.sql", {
       type: "application/sql",
     });
 
     await uploadObject(settings, {
       bucket: "demo",
-      objectKey: "docs/underhear.postgresql.sql",
+      objectKey: "docs/sample.postgresql.sql",
       file,
       visibility: "private",
     });
@@ -76,7 +76,7 @@ describe("objects api helpers", () => {
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({
         timeout: 0,
-        url: "/api/v1/buckets/demo/objects/docs/underhear%2Epostgresql%2Esql",
+        url: "/api/v1/buckets/demo/objects/docs/sample%2Epostgresql%2Esql",
         headers: expect.objectContaining({
           "X-Allow-Overwrite": "false",
         }),
@@ -86,13 +86,13 @@ describe("objects api helpers", () => {
 
   it("checks object existence with HEAD requests", async () => {
     await expect(
-      checkObjectExists(settings, "demo", "docs/underhear.postgresql.sql"),
+      checkObjectExists(settings, "demo", "docs/sample.postgresql.sql"),
     ).resolves.toBe(true);
 
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({
         method: "HEAD",
-        url: "/api/v1/buckets/demo/objects/docs/underhear%2Epostgresql%2Esql",
+        url: "/api/v1/buckets/demo/objects/docs/sample%2Epostgresql%2Esql",
       }),
     );
   });
@@ -118,13 +118,13 @@ describe("objects api helpers", () => {
   });
 
   it("sets overwrite header when explicit overwrite is requested", async () => {
-    const file = new File(["sql"], "underhear.postgresql.sql", {
+    const file = new File(["sql"], "sample.postgresql.sql", {
       type: "application/sql",
     });
 
     await uploadObject(settings, {
       bucket: "demo",
-      objectKey: "docs/underhear.postgresql.sql",
+      objectKey: "docs/sample.postgresql.sql",
       file,
       visibility: "private",
       allowOverwrite: true,
@@ -154,14 +154,14 @@ describe("objects api helpers", () => {
       },
     });
 
-    const file = new File(["sql"], "underhear.postgresql.sql", {
+    const file = new File(["sql"], "sample.postgresql.sql", {
       type: "application/sql",
     });
 
     await expect(
       uploadObject(settings, {
         bucket: "demo",
-        objectKey: "docs/underhear.postgresql.sql",
+        objectKey: "docs/sample.postgresql.sql",
         file,
         visibility: "private",
       }),
@@ -194,32 +194,32 @@ describe("objects api helpers", () => {
   it("encodes dots when building a public object URL", () => {
     expect(
       buildPublicObjectURL(
-        "https://oss.underhear.cn/",
+        "https://api.localhost/",
         "demo",
-        "docs/underhear.postgresql.sql",
+        "docs/sample.postgresql.sql",
       ),
     ).toBe(
-      "https://oss.underhear.cn/api/v1/buckets/demo/objects/docs/underhear%2Epostgresql%2Esql",
+      "https://api.localhost/api/v1/buckets/demo/objects/docs/sample%2Epostgresql%2Esql",
     );
   });
 
   it("adds the download query when building a public object download URL", () => {
     expect(
       buildPublicObjectURL(
-        "https://oss.underhear.cn/",
+        "https://api.localhost/",
         "demo",
-        "docs/underhear.postgresql.sql",
+        "docs/sample.postgresql.sql",
         { download: true },
       ),
     ).toBe(
-      "https://oss.underhear.cn/api/v1/buckets/demo/objects/docs/underhear%2Epostgresql%2Esql?download=true",
+      "https://api.localhost/api/v1/buckets/demo/objects/docs/sample%2Epostgresql%2Esql?download=true",
     );
   });
 
   it("calls visibility update endpoint with encoded object key", async () => {
     await updateObjectVisibility(settings, {
       bucket: "demo",
-      objectKey: "docs/underhear.postgresql.sql",
+      objectKey: "docs/sample.postgresql.sql",
       visibility: "public",
     });
 
@@ -227,7 +227,7 @@ describe("objects api helpers", () => {
       settings,
       expect.objectContaining({
         method: "PATCH",
-        url: "/api/v1/buckets/demo/objects/visibility/docs/underhear%2Epostgresql%2Esql",
+        url: "/api/v1/buckets/demo/objects/visibility/docs/sample%2Epostgresql%2Esql",
         data: { visibility: "public" },
       }),
     );

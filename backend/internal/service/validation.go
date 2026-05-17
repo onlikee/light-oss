@@ -14,7 +14,7 @@ import (
 )
 
 var bucketNamePattern = regexp.MustCompile(`^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$`)
-var siteDomainPattern = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]*[a-z0-9])?\.underhear\.cn$`)
+var siteDomainLabelPattern = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]*[a-z0-9])?$`)
 
 func ValidateBucketName(name string) error {
 	if !bucketNamePattern.MatchString(name) {
@@ -189,7 +189,7 @@ func NormalizeSiteDocument(value string, defaultValue string, allowEmpty bool) (
 	return normalized, nil
 }
 
-func NormalizeSiteDomain(value string) (string, error) {
+func NormalizeSiteDomain(value string, siteDomainSuffix string) (string, error) {
 	normalized := strings.ToLower(strings.TrimSpace(value))
 	normalized = strings.TrimSuffix(normalized, ".")
 	if normalized == "" {
@@ -205,14 +205,19 @@ func NormalizeSiteDomain(value string) (string, error) {
 	if strings.Contains(normalized, ":") {
 		return "", apperrors.New(http.StatusBadRequest, "invalid_domain", "domain must not include a port")
 	}
-	if !siteDomainPattern.MatchString(normalized) {
-		return "", apperrors.New(http.StatusBadRequest, "invalid_domain", "domain must match *.underhear.cn")
+
+	suffix := normalizeSiteDomainSuffix(siteDomainSuffix)
+	expectedSuffix := "." + suffix
+	if !isValidSiteDomainSuffix(suffix) ||
+		!strings.HasSuffix(normalized, expectedSuffix) ||
+		!siteDomainLabelPattern.MatchString(strings.TrimSuffix(normalized, expectedSuffix)) {
+		return "", apperrors.New(http.StatusBadRequest, "invalid_domain", "domain must match a single-level subdomain under the configured site domain suffix")
 	}
 
 	return normalized, nil
 }
 
-func NormalizeSiteDomains(values []string) ([]string, error) {
+func NormalizeSiteDomains(values []string, siteDomainSuffix string) ([]string, error) {
 	if len(values) == 0 {
 		return []string{}, nil
 	}
@@ -220,7 +225,7 @@ func NormalizeSiteDomains(values []string) ([]string, error) {
 	seen := make(map[string]struct{}, len(values))
 	normalized := make([]string, 0, len(values))
 	for _, value := range values {
-		domain, err := NormalizeSiteDomain(value)
+		domain, err := NormalizeSiteDomain(value, siteDomainSuffix)
 		if err != nil {
 			return nil, err
 		}
@@ -233,6 +238,24 @@ func NormalizeSiteDomains(values []string) ([]string, error) {
 
 	sort.Strings(normalized)
 	return normalized, nil
+}
+
+func normalizeSiteDomainSuffix(value string) string {
+	return strings.TrimSuffix(strings.ToLower(strings.TrimSpace(value)), ".")
+}
+
+func isValidSiteDomainSuffix(value string) bool {
+	if value == "" {
+		return false
+	}
+
+	for _, label := range strings.Split(value, ".") {
+		if !siteDomainLabelPattern.MatchString(label) {
+			return false
+		}
+	}
+
+	return true
 }
 
 func NormalizeRequestHost(host string) string {
