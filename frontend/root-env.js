@@ -3,7 +3,6 @@ import path from "node:path";
 export var defaultFrontendEnvKeys = [
     "VITE_DEFAULT_API_BASE_URL",
     "VITE_DEFAULT_BEARER_TOKEN",
-    "VITE_SITE_DOMAIN_SUFFIX",
 ];
 var rootEnvFilenames = [".env.personal", ".env"];
 export function resolveRootEnvFile(rootDir) {

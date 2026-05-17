@@ -189,7 +189,7 @@ func NormalizeSiteDocument(value string, defaultValue string, allowEmpty bool) (
 	return normalized, nil
 }
 
-func NormalizeSiteDomain(value string, siteDomainSuffix string) (string, error) {
+func NormalizeSiteDomain(value string) (string, error) {
 	normalized := strings.ToLower(strings.TrimSpace(value))
 	normalized = strings.TrimSuffix(normalized, ".")
 	if normalized == "" {
@@ -206,18 +206,14 @@ func NormalizeSiteDomain(value string, siteDomainSuffix string) (string, error) 
 		return "", apperrors.New(http.StatusBadRequest, "invalid_domain", "domain must not include a port")
 	}
 
-	suffix := normalizeSiteDomainSuffix(siteDomainSuffix)
-	expectedSuffix := "." + suffix
-	if !isValidSiteDomainSuffix(suffix) ||
-		!strings.HasSuffix(normalized, expectedSuffix) ||
-		!siteDomainLabelPattern.MatchString(strings.TrimSuffix(normalized, expectedSuffix)) {
-		return "", apperrors.New(http.StatusBadRequest, "invalid_domain", "domain must match a single-level subdomain under the configured site domain suffix")
+	if !isValidSiteDomain(normalized) {
+		return "", apperrors.New(http.StatusBadRequest, "invalid_domain", "domain must be a valid hostname")
 	}
 
 	return normalized, nil
 }
 
-func NormalizeSiteDomains(values []string, siteDomainSuffix string) ([]string, error) {
+func NormalizeSiteDomains(values []string) ([]string, error) {
 	if len(values) == 0 {
 		return []string{}, nil
 	}
@@ -225,7 +221,7 @@ func NormalizeSiteDomains(values []string, siteDomainSuffix string) ([]string, e
 	seen := make(map[string]struct{}, len(values))
 	normalized := make([]string, 0, len(values))
 	for _, value := range values {
-		domain, err := NormalizeSiteDomain(value, siteDomainSuffix)
+		domain, err := NormalizeSiteDomain(value)
 		if err != nil {
 			return nil, err
 		}
@@ -240,17 +236,13 @@ func NormalizeSiteDomains(values []string, siteDomainSuffix string) ([]string, e
 	return normalized, nil
 }
 
-func normalizeSiteDomainSuffix(value string) string {
-	return strings.TrimSuffix(strings.ToLower(strings.TrimSpace(value)), ".")
-}
-
-func isValidSiteDomainSuffix(value string) bool {
-	if value == "" {
+func isValidSiteDomain(value string) bool {
+	if value == "" || len(value) > 253 {
 		return false
 	}
 
 	for _, label := range strings.Split(value, ".") {
-		if !siteDomainLabelPattern.MatchString(label) {
+		if len(label) > 63 || !siteDomainLabelPattern.MatchString(label) {
 			return false
 		}
 	}

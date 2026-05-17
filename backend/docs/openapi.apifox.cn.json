@@ -1229,7 +1229,7 @@
         "tags": ["站点"],
         "operationId": "createSite",
         "summary": "创建网站绑定",
-        "description": "站点域名必须是配置项 `APP_SITE_DOMAIN_SUFFIX` 下的单层子域名。`root_prefix` 会被规范化为以斜杠结尾；`index_document` 在省略或为空时默认为 `index.html`；`enabled` 默认为 `true`；`spa_fallback` 默认为 `false`。",
+        "description": "站点域名必须是合法 hostname。`root_prefix` 会被规范化为以斜杠结尾；`index_document` 在省略或为空时默认为 `index.html`；`enabled` 默认为 `true`；`spa_fallback` 默认为 `false`。",
         "security": [
           {
             "bearerAuth": []
@@ -2433,7 +2433,7 @@
             "items": {
               "type": "string"
             },
-            "description": "可选的域名绑定。每个项目都必须是配置项 `APP_SITE_DOMAIN_SUFFIX` 下的单层子域名。"
+            "description": "可选的域名绑定。每个项目都必须是合法 hostname。"
           }
         }
       },

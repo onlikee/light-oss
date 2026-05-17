@@ -2718,7 +2718,7 @@ func TestSiteManagementCRUDAndDomainConflict(t *testing.T) {
 	}
 }
 
-func TestSiteManagementRejectsDeepSubdomains(t *testing.T) {
+func TestSiteManagementAcceptsCustomHostnames(t *testing.T) {
 	router := newTestRouter(t, 1024)
 
 	createBucket(t, router, "websites")
@@ -2729,15 +2729,15 @@ func TestSiteManagementRejectsDeepSubdomains(t *testing.T) {
 		bytes.NewBufferString(`{
 			"bucket":"websites",
 			"root_prefix":"demo/",
-			"domains":["www.demo.localhost"]
+			"domains":["www.demo.example.com"]
 		}`),
 	)
 	req.Header.Set("Authorization", "Bearer dev-token")
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
-	if rec.Code != http.StatusBadRequest {
-		t.Fatalf("expected 400, got %d, body=%s", rec.Code, rec.Body.String())
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("expected 201, got %d, body=%s", rec.Code, rec.Body.String())
 	}
 }
 
@@ -2965,7 +2965,6 @@ func newTestRouterWithStorageRootAndDB(t *testing.T, maxUploadSize int64) (*gin.
 		AppEnv:                     "development",
 		AppAddr:                    ":0",
 		PublicBaseURL:              "http://example.com",
-		SiteDomainSuffix:           "localhost",
 		StorageRoot:                filepath.ToSlash(root),
 		MaxUploadSizeBytes:         maxUploadSize,
 		MaxMultipartMemoryBytes:    8 * 1024 * 1024,
@@ -2986,7 +2985,7 @@ func newTestRouterWithStorageRootAndDB(t *testing.T, maxUploadSize int64) (*gin.
 	storageQuotaService := service.NewStorageQuotaService(zap.NewNop(), root, localStorage, objectRepo, recycleRepo, storageQuotaRepo)
 	objectService := service.NewObjectService(db, bucketRepo, objectRepo, recycleRepo, localStorage, storageQuotaService)
 	recycleBinService := service.NewRecycleBinService(db, bucketRepo, objectRepo, recycleRepo, storageQuotaService)
-	siteService := service.NewSiteService(bucketRepo, siteRepo, objectService, cfg.SiteDomainSuffix)
+	siteService := service.NewSiteService(bucketRepo, siteRepo, objectService)
 	return handler.NewRouter(handler.Dependencies{
 		Config:              cfg,
 		Logger:              zap.NewNop(),

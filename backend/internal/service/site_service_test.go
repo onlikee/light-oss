@@ -154,22 +154,39 @@ func TestSiteServiceOpenContentUsesFallbacksAndHidesPrivateObjects(t *testing.T)
 	}
 }
 
-func TestNormalizeSiteDomainOnlyAcceptsSingleLevelConfiguredSubdomains(t *testing.T) {
-	valid, err := NormalizeSiteDomain("Demo.Example.Com", "example.com")
-	if err != nil {
-		t.Fatalf("expected valid domain, got %v", err)
+func TestNormalizeSiteDomainAcceptsCustomHostnames(t *testing.T) {
+	validDomains := map[string]string{
+		"Demo.Example.Com":      "demo.example.com",
+		"example.com":           "example.com",
+		"www.demo.example.com.": "www.demo.example.com",
+		"demo.localhost":        "demo.localhost",
 	}
-	if valid != "demo.example.com" {
-		t.Fatalf("expected normalized domain, got %q", valid)
+	for input, expected := range validDomains {
+		valid, err := NormalizeSiteDomain(input)
+		if err != nil {
+			t.Fatalf("expected %q to be valid, got %v", input, err)
+		}
+		if valid != expected {
+			t.Fatalf("expected normalized domain %q, got %q", expected, valid)
+		}
 	}
+}
 
+func TestNormalizeSiteDomainRejectsInvalidHostnames(t *testing.T) {
 	invalidDomains := []string{
-		"example.com",
-		"www.demo.example.com",
-		"demo.localhost",
+		"",
+		"http://example.com",
+		"example.com/path",
+		"example.com?debug=true",
+		"example.com:8080",
+		"-example.com",
+		"example-.com",
+		"example..com",
+		"exa_mple.com",
+		strings.Repeat("a", 64) + ".example.com",
 	}
 	for _, domain := range invalidDomains {
-		if _, err := NormalizeSiteDomain(domain, "example.com"); err == nil {
+		if _, err := NormalizeSiteDomain(domain); err == nil {
 			t.Fatalf("expected %q to be rejected", domain)
 		}
 	}
@@ -199,7 +216,7 @@ func newTestSiteServices(t *testing.T) (*repository.BucketRepository, *ObjectSer
 	storageQuotaRepo := repository.NewStorageQuotaRepository(db)
 	storageQuotaService := NewStorageQuotaService(zap.NewNop(), root, localStorage, objectRepo, recycleRepo, storageQuotaRepo)
 	objectService := NewObjectService(db, bucketRepo, objectRepo, recycleRepo, localStorage, storageQuotaService)
-	siteService := NewSiteService(bucketRepo, siteRepo, objectService, "localhost")
+	siteService := NewSiteService(bucketRepo, siteRepo, objectService)
 	return bucketRepo, objectService, siteService
 }
 

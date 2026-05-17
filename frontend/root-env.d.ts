@@ -1,4 +1,4 @@
-export declare const defaultFrontendEnvKeys: readonly ["VITE_DEFAULT_API_BASE_URL", "VITE_DEFAULT_BEARER_TOKEN", "VITE_SITE_DOMAIN_SUFFIX"];
+export declare const defaultFrontendEnvKeys: readonly ["VITE_DEFAULT_API_BASE_URL", "VITE_DEFAULT_BEARER_TOKEN"];
 type DefaultFrontendEnvKey = (typeof defaultFrontendEnvKeys)[number];
 type DefaultFrontendEnv = Partial<Record<DefaultFrontendEnvKey, string>>;
 export declare function resolveRootEnvFile(rootDir: string): string | null;

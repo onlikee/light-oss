@@ -93,7 +93,7 @@ func main() {
 	bucketService := service.NewBucketService(logger, gormDB, bucketRepo, objectRepo, recycleRepo, siteRepo, storageQuotaService)
 	objectService := service.NewObjectService(gormDB, bucketRepo, objectRepo, recycleRepo, localStorage, storageQuotaService)
 	recycleBinService := service.NewRecycleBinService(gormDB, bucketRepo, objectRepo, recycleRepo, storageQuotaService)
-	siteService := service.NewSiteService(bucketRepo, siteRepo, objectService, cfg.SiteDomainSuffix)
+	siteService := service.NewSiteService(bucketRepo, siteRepo, objectService)
 	sitePublishService := service.NewSitePublishService(gormDB, objectRepo, siteRepo, localStorage, storageQuotaService, siteService)
 	signService := service.NewSignService(signing.NewSigner(cfg.SigningSecret), cfg.PublicBaseURL, cfg.DefaultSignedURLTTLSeconds, cfg.MaxSignedURLTTLSeconds)
 	systemStatsService := service.NewSystemStatsService(logger, storageQuotaService)

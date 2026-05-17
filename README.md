@@ -82,10 +82,8 @@ Light OSS 由四部分组成：
 | 变量                        | 本地开发建议                                                        | Docker 网关建议           | 说明                                     |
 | --------------------------- | ------------------------------------------------------------------- | ------------------------- | ---------------------------------------- |
 | `APP_PUBLIC_BASE_URL`       | `http://localhost:8080`                                             | `http://api.localhost`    | 影响签名下载链接生成。                   |
-| `APP_SITE_DOMAIN_SUFFIX`    | `localhost`                                                         | `localhost`               | 站点域名允许绑定的根后缀。               |
 | `APP_STORAGE_ROOT`          | `./light-oss-data/storage` 或 Windows 下 `.\light-oss-data\storage` | `/data/storage`           | Compose 中后端卷挂载在 `/data/storage`。 |
 | `VITE_DEFAULT_API_BASE_URL` | `http://localhost:8080`                                             | `http://api.localhost`    | 前端首次加载时默认使用的 API 地址。      |
-| `VITE_SITE_DOMAIN_SUFFIX`   | `localhost`                                                         | `localhost`               | 前端站点域名输入示例使用的后缀。         |
 
 ### 本地运行
 
@@ -101,7 +99,6 @@ Light OSS 由四部分组成：
 APP_ENV=development
 APP_ADDR=:8080
 APP_PUBLIC_BASE_URL=http://localhost:8080
-APP_SITE_DOMAIN_SUFFIX=localhost
 APP_STORAGE_ROOT=./light-oss-data/storage
 APP_BEARER_TOKENS=light-oss
 APP_SIGNING_SECRET=change-me-in-local-dev
@@ -110,7 +107,6 @@ DB_DSN=root:112233ss@tcp(localhost:3306)/light-oss?charset=utf8mb4&parseTime=Tru
 
 VITE_DEFAULT_API_BASE_URL=http://localhost:8080
 VITE_DEFAULT_BEARER_TOKEN=light-oss
-VITE_SITE_DOMAIN_SUFFIX=localhost
 ```
 
 #### 2. 启动 MySQL
@@ -166,12 +162,9 @@ Docker Compose 仍默认读取根目录 `.env`，不会自动采用 `.env.person
 
 ```env
 APP_PUBLIC_BASE_URL=http://api.localhost
-APP_SITE_DOMAIN_SUFFIX=localhost
 APP_STORAGE_ROOT=/data/storage
 VITE_DEFAULT_API_BASE_URL=http://api.localhost
 VITE_DEFAULT_BEARER_TOKEN=light-oss
-VITE_SITE_DOMAIN_SUFFIX=localhost
-SITE_DOMAIN_SUFFIX=localhost
 ```
 
 说明：
@@ -179,7 +172,7 @@ SITE_DOMAIN_SUFFIX=localhost
 - `gateway` 是唯一对外入口，暴露端口 `80`
 - `backend` 与 `frontend` 在 Compose 内部互通，但默认不直接暴露给宿主机
 - `APP_STORAGE_ROOT` 在 Compose 下应指向容器内路径 `/data/storage`
-- `APP_SITE_DOMAIN_SUFFIX`、`VITE_SITE_DOMAIN_SUFFIX`、`SITE_DOMAIN_SUFFIX` 应保持一致；如果你改成 `example.com`，站点示例域名应改为 `demo.example.com`
+- 自定义站点域名需要由你自行通过 DNS 或 hosts 指向 gateway
 
 #### 2. 配置 hosts
 
@@ -214,7 +207,7 @@ make up
 
 - `console.localhost` -> frontend
 - `api.localhost` -> backend API
-- `*.localhost` -> backend 网站托管解析
+- 其他域名 -> backend 网站托管解析
 
 需要特别注意：
 
@@ -248,7 +241,6 @@ make up
 | `APP_ENV`                            | `development`                                                                                             | 后端运行环境，常见值为 `development` 或 `production`。     |
 | `APP_ADDR`                           | `:8080`                                                                                                   | 后端 HTTP 服务监听地址。                                   |
 | `APP_PUBLIC_BASE_URL`                | `http://localhost:8080`                                                                                   | 生成签名下载链接等场景使用的对外基础地址。                 |
-| `APP_SITE_DOMAIN_SUFFIX`             | `localhost`                                                                                               | 站点域名允许绑定的根后缀，域名必须是该后缀下的单层子域名。 |
 | `APP_STORAGE_ROOT`                   | `./light-oss-data/storage`                                                                                | 对象内容存储根目录；Compose 模式建议改为 `/data/storage`。 |
 | `APP_MAX_UPLOAD_SIZE_BYTES`          | `1073741824`                                                                                              | 单次上传请求允许的最大体积，单位字节。                     |
 | `APP_MAX_MULTIPART_MEMORY_BYTES`     | `8388608`                                                                                                 | 处理 `multipart/form-data` 时允许驻留内存的大小。          |
@@ -271,13 +263,6 @@ make up
 | --------------------------- | ----------------------- | --------------------------------------- |
 | `VITE_DEFAULT_API_BASE_URL` | `http://localhost:8080` | 前端首次加载时默认填入的 API Base URL。 |
 | `VITE_DEFAULT_BEARER_TOKEN` | `light-oss`             | 前端首次加载时默认填入的 Bearer Token。 |
-| `VITE_SITE_DOMAIN_SUFFIX`   | `localhost`             | 前端站点域名输入示例使用的后缀。        |
-
-### Gateway
-
-| 变量                 | 示例值      | 说明                                                       |
-| -------------------- | ----------- | ---------------------------------------------------------- |
-| `SITE_DOMAIN_SUFFIX` | `localhost` | nginx 模板使用的站点域名后缀，应与后端允许的后缀保持一致。 |
 
 ## curl 示例
 
@@ -510,7 +495,7 @@ curl -X POST "$BASE_URL/api/v1/sign/download" \
 
 ### 19. 创建站点绑定
 
-站点域名必须是 `APP_SITE_DOMAIN_SUFFIX` 下的单层子域名，并且被访问的站点资源必须是 public 对象。默认配置下可以使用 `demo.localhost`。
+站点域名使用用户输入的完整域名，并且被访问的站点资源必须是 public 对象。本地默认示例可以使用 `demo.localhost`。
 
 ```bash
 curl -X POST "$BASE_URL/api/v1/sites" \
@@ -677,7 +662,7 @@ curl -H "Host: $SITE_DOMAIN" http://127.0.0.1/
 
 请依次检查：
 
-- 域名是否是 `APP_SITE_DOMAIN_SUFFIX` 下的单层子域名
+- 域名是否是合法 hostname，并且已在站点绑定中配置
 - hosts 是否把该域名指向了 `127.0.0.1`
 - 站点绑定里的 `bucket` 与 `root_prefix` 是否正确
 - `index_document` 是否真实存在

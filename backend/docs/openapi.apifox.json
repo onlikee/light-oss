@@ -1324,7 +1324,7 @@
         "tags": ["Sites"],
         "operationId": "createSite",
         "summary": "Create a site binding",
-        "description": "Site domains must contain exactly one label before the configured APP_SITE_DOMAIN_SUFFIX. root_prefix is normalized to end with a trailing slash. index_document defaults to index.html when omitted or empty. enabled defaults to true. spa_fallback defaults to false.",
+        "description": "Site domains must be valid hostnames. root_prefix is normalized to end with a trailing slash. index_document defaults to index.html when omitted or empty. enabled defaults to true. spa_fallback defaults to false.",
         "security": [
           {
             "bearerAuth": []
@@ -2528,7 +2528,7 @@
             "items": {
               "type": "string"
             },
-            "description": "Optional domain bindings. Each item must contain exactly one label before the configured APP_SITE_DOMAIN_SUFFIX."
+            "description": "Optional domain bindings. Each item must be a valid hostname."
           }
         }
       },
