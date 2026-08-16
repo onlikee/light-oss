@@ -83,7 +83,6 @@ light-oss 适合内部工具、原型系统、轻量私有部署，以及需要�
    ```env
    APP_ENV=development
    APP_ADDR=:8080
-   APP_PUBLIC_BASE_URL=http://localhost:8080
    APP_STORAGE_ROOT=./light-oss-data/storage
    APP_BEARER_TOKENS=light-oss
    APP_SIGNING_SECRET=change-me-in-local-dev
@@ -130,7 +129,6 @@ light-oss 适合内部工具、原型系统、轻量私有部署，以及需要�
 1. 调整根目录 `.env`。
 
    ```env
-   APP_PUBLIC_BASE_URL=http://api.localhost
    APP_STORAGE_ROOT=/data/storage
    VITE_DEFAULT_API_BASE_URL=http://api.localhost
    VITE_DEFAULT_BEARER_TOKEN=light-oss
@@ -176,7 +174,7 @@ light-oss 适合内部工具、原型系统、轻量私有部署，以及需要�
 - 根目录 `.env` 用于 Docker Compose。
 - 本地后端/前端命令会优先读取根目录 `.env.personal`。
 - 浏览器 `localStorage` 中保存的前端设置会覆盖 `VITE_DEFAULT_API_BASE_URL` 和 `VITE_DEFAULT_BEARER_TOKEN`。
-- `APP_PUBLIC_BASE_URL` 会影响签名下载 URL 的生成。
+- 签名下载接口返回相对 API 路径，前端使用当前 API Base URL 补全下载地址。
 - `APP_STORAGE_ROOT` 本地直跑时应是本机路径，Compose 模式下应是 `/data/storage`。
 - `APP_BEARER_TOKENS` 是 Bearer Token 白名单，多个 token 用逗号分隔。
 - 不要把真实生产密码、签名密钥、token 或域名配置提交到公开仓库。

@@ -22,10 +22,11 @@ import {
 import { toast } from "sonner";
 import { useParams, useSearchParams } from "react-router-dom";
 import {
+  buildApiURL,
   buildPublicObjectURL,
   checkObjectExists,
   createFolder,
-  createSignedDownloadURL,
+  createSignedDownloadPath,
   deleteExplorerEntriesBatch,
   deleteFolder,
   deleteObject,
@@ -778,14 +779,17 @@ export function BucketObjectsPage() {
         ? buildPublicObjectURL(settings.apiBaseUrl, bucket, entry.object_key, {
             download: true,
           })
-        : (
-            await createSignedDownloadURL(
-              settings,
-              bucket,
-              entry.object_key,
-              300,
-            )
-          ).url;
+        : buildApiURL(
+            settings.apiBaseUrl,
+            (
+              await createSignedDownloadPath(
+                settings,
+                bucket,
+                entry.object_key,
+                300,
+              )
+            ).path,
+          );
 
     await downloadFile(
       appendDownloadQuery(downloadUrl),

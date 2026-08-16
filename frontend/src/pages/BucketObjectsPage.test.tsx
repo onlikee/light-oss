@@ -19,7 +19,11 @@ vi.mock("../api/objects", () => ({
   deleteFolder: vi.fn(),
   downloadFolderZip: vi.fn(),
   updateObjectVisibility: vi.fn(),
-  createSignedDownloadURL: vi.fn(),
+  createSignedDownloadPath: vi.fn(),
+  buildApiURL: vi.fn(
+    (apiBaseUrl: string, path: string) =>
+      `${apiBaseUrl.replace(/\/+$/, "")}${path}`,
+  ),
   buildPublicObjectURL: vi.fn(() => "http://localhost:8080/download"),
 }));
 
@@ -43,7 +47,7 @@ vi.mock("../api/sites", () => ({
 import {
   checkObjectExists,
   createFolder,
-  createSignedDownloadURL,
+  createSignedDownloadPath,
   deleteRecycleBinObjects,
   deleteExplorerEntriesBatch,
   deleteFolder,
@@ -82,8 +86,8 @@ describe("BucketObjectsPage", () => {
       failed_items: [],
     });
     vi.mocked(checkObjectExists).mockResolvedValue(false);
-    vi.mocked(createSignedDownloadURL).mockResolvedValue({
-      url: "http://localhost:8080/signed-download",
+    vi.mocked(createSignedDownloadPath).mockResolvedValue({
+      path: "/signed-download",
       expires_at: 1,
     });
     vi.mocked(downloadFile).mockResolvedValue(undefined);
@@ -1155,7 +1159,7 @@ describe("BucketObjectsPage", () => {
     expect(await screen.findByText("archive failed")).toBeInTheDocument();
   });
 
-  it("downloads private files through a signed URL without opening a new tab", async () => {
+  it("downloads private files through a signed path without opening a new tab", async () => {
     vi.mocked(listExplorerEntries).mockResolvedValue({
       items: [
         {
@@ -1187,7 +1191,7 @@ describe("BucketObjectsPage", () => {
     );
 
     await waitFor(() => {
-      expect(createSignedDownloadURL).toHaveBeenCalledWith(
+      expect(createSignedDownloadPath).toHaveBeenCalledWith(
         { apiBaseUrl: "http://localhost:8080", bearerToken: "dev-token" },
         "demo",
         "docs/private.txt",

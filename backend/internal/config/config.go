@@ -11,7 +11,6 @@ import (
 type Config struct {
 	AppEnv                         string
 	AppAddr                        string
-	PublicBaseURL                  string
 	DatabaseDSN                    string
 	DatabaseMaxOpenConns           int
 	DatabaseMaxIdleConns           int
@@ -43,7 +42,6 @@ func Load() (Config, error) {
 
 	v.SetDefault("APP_ENV", "development")
 	v.SetDefault("APP_ADDR", ":8080")
-	v.SetDefault("APP_PUBLIC_BASE_URL", "http://localhost:8080")
 	v.SetDefault("DB_DSN", "root:123456@tcp(localhost:3306)/light-oss?charset=utf8mb4&parseTime=True&loc=UTC&multiStatements=true")
 	v.SetDefault("DB_MAX_OPEN_CONNS", 10)
 	v.SetDefault("DB_MAX_IDLE_CONNS", 5)
@@ -67,7 +65,6 @@ func Load() (Config, error) {
 	cfg := Config{
 		AppEnv:                         strings.ToLower(v.GetString("APP_ENV")),
 		AppAddr:                        v.GetString("APP_ADDR"),
-		PublicBaseURL:                  strings.TrimRight(v.GetString("APP_PUBLIC_BASE_URL"), "/"),
 		DatabaseDSN:                    v.GetString("DB_DSN"),
 		DatabaseMaxOpenConns:           v.GetInt("DB_MAX_OPEN_CONNS"),
 		DatabaseMaxIdleConns:           v.GetInt("DB_MAX_IDLE_CONNS"),

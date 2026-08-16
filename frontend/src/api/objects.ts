@@ -13,7 +13,7 @@ import type {
   ObjectVisibility,
   RecycleBinObjectListResult,
   RestoreRecycleBinObjectsResult,
-  SignedDownloadResult,
+  SignedDownloadPathResult,
 } from "./types";
 import { buildFolderUploadManifest } from "../lib/folder-upload";
 import type { ExplorerSortBy, ExplorerSortOrder } from "../lib/explorer";
@@ -318,13 +318,13 @@ export function updateObjectVisibility(
   });
 }
 
-export function createSignedDownloadURL(
+export function createSignedDownloadPath(
   settings: AppSettings,
   bucket: string,
   objectKey: string,
   expiresInSeconds: number,
 ) {
-  return apiRequest<SignedDownloadResult>(settings, {
+  return apiRequest<SignedDownloadPathResult>(settings, {
     method: "POST",
     url: "/api/v1/sign/download",
     data: {
@@ -382,16 +382,20 @@ export function buildPublicObjectURL(
     download?: boolean;
   },
 ) {
-  const baseUrl = apiBaseUrl.trim().replace(/\/+$/, "");
-  const url = `${baseUrl}/api/v1/buckets/${encodeURIComponent(bucket)}/objects/${encodeObjectKey(
-    objectKey,
-  )}`;
+  const url = buildApiURL(
+    apiBaseUrl,
+    `/api/v1/buckets/${encodeURIComponent(bucket)}/objects/${encodeObjectKey(objectKey)}`,
+  );
 
   if (!options?.download) {
     return url;
   }
 
   return `${url}?download=true`;
+}
+
+export function buildApiURL(apiBaseUrl: string, path: string) {
+  return `${apiBaseUrl.trim().replace(/\/+$/, "")}${path}`;
 }
 
 function encodeObjectKey(objectKey: string) {

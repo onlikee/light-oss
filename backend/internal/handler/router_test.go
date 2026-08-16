@@ -131,7 +131,7 @@ type recycleBinBatchResponse struct {
 }
 
 type signResponse struct {
-	URL string `json:"url"`
+	Path string `json:"path"`
 }
 
 type siteResponse struct {
@@ -409,9 +409,15 @@ func TestPrivateObjectRequiresAuthOrSignature(t *testing.T) {
 
 	var signBody apiEnvelope[signResponse]
 	decodeJSON(t, signRec.Body.Bytes(), &signBody)
-	parsed, err := url.Parse(signBody.Data.URL)
+	parsed, err := url.Parse(signBody.Data.Path)
 	if err != nil {
-		t.Fatalf("parse signed url: %v", err)
+		t.Fatalf("parse signed path: %v", err)
+	}
+	if parsed.IsAbs() || parsed.Host != "" {
+		t.Fatalf("expected relative signed path, got %q", signBody.Data.Path)
+	}
+	if !strings.HasPrefix(parsed.Path, "/api/v1/") {
+		t.Fatalf("expected signed API path, got %q", signBody.Data.Path)
 	}
 
 	signedReq := httptest.NewRequest(http.MethodGet, parsed.RequestURI(), nil)
@@ -2964,7 +2970,6 @@ func newTestRouterWithStorageRootAndDB(t *testing.T, maxUploadSize int64) (*gin.
 	cfg := config.Config{
 		AppEnv:                     "development",
 		AppAddr:                    ":0",
-		PublicBaseURL:              "http://example.com",
 		StorageRoot:                filepath.ToSlash(root),
 		MaxUploadSizeBytes:         maxUploadSize,
 		MaxMultipartMemoryBytes:    8 * 1024 * 1024,
@@ -2997,7 +3002,7 @@ func newTestRouterWithStorageRootAndDB(t *testing.T, maxUploadSize int64) (*gin.
 		RecycleBinService:   recycleBinService,
 		SiteService:         siteService,
 		SitePublishService:  service.NewSitePublishService(db, objectRepo, siteRepo, localStorage, storageQuotaService, siteService),
-		SignService:         service.NewSignService(signing.NewSigner(cfg.SigningSecret), cfg.PublicBaseURL, cfg.DefaultSignedURLTTLSeconds, cfg.MaxSignedURLTTLSeconds),
+		SignService:         service.NewSignService(signing.NewSigner(cfg.SigningSecret), cfg.DefaultSignedURLTTLSeconds, cfg.MaxSignedURLTTLSeconds),
 		SystemStatsService:  service.NewSystemStatsService(zap.NewNop(), storageQuotaService),
 		StorageQuotaService: storageQuotaService,
 	}), root, db

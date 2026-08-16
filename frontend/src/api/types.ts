@@ -175,8 +175,8 @@ export interface PublishSiteResult {
   site: Site;
 }
 
-export interface SignedDownloadResult {
-  url: string;
+export interface SignedDownloadPathResult {
+  path: string;
   expires_at: number;
 }
 

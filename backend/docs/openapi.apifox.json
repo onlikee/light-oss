@@ -1805,8 +1805,8 @@
       "post": {
         "tags": ["Signing"],
         "operationId": "signDownload",
-        "summary": "Generate a signed download URL",
-        "description": "Creates a temporary signed URL for GET object downloads. The current environment defaults expires_in_seconds to 300 when the client sends 0 or a negative value, and rejects values above 86400.",
+        "summary": "Generate a signed download path",
+        "description": "Creates a temporary signed relative API path for GET object downloads. Clients resolve the path against their current API Base URL. The current environment defaults expires_in_seconds to 300 when the client sends 0 or a negative value, and rejects values above 86400.",
         "security": [
           {
             "bearerAuth": []
@@ -1824,7 +1824,7 @@
         },
         "responses": {
           "200": {
-            "description": "Signed download URL.",
+            "description": "Signed relative download path.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2472,13 +2472,13 @@
           }
         }
       },
-      "SignedDownloadResult": {
+      "SignedDownloadPathResult": {
         "type": "object",
-        "required": ["url", "expires_at"],
+        "required": ["path", "expires_at"],
         "properties": {
-          "url": {
+          "path": {
             "type": "string",
-            "format": "uri"
+            "description": "Relative API path including the expiry and signature query parameters. Resolve it against the current API Base URL."
           },
           "expires_at": {
             "type": "integer",
@@ -2930,7 +2930,7 @@
                 "type": "string"
               },
               "data": {
-                "$ref": "#/components/schemas/SignedDownloadResult"
+                "$ref": "#/components/schemas/SignedDownloadPathResult"
               }
             }
           }

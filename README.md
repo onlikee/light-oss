@@ -83,7 +83,6 @@ The simplest local setup is to run MySQL with Docker, then run the backend and f
    ```env
    APP_ENV=development
    APP_ADDR=:8080
-   APP_PUBLIC_BASE_URL=http://localhost:8080
    APP_STORAGE_ROOT=./light-oss-data/storage
    APP_BEARER_TOKENS=light-oss
    APP_SIGNING_SECRET=change-me-in-local-dev
@@ -130,7 +129,6 @@ Use this mode when you want to verify the full gateway and hosted-site domain fl
 1. Adjust the root `.env` for gateway mode.
 
    ```env
-   APP_PUBLIC_BASE_URL=http://api.localhost
    APP_STORAGE_ROOT=/data/storage
    VITE_DEFAULT_API_BASE_URL=http://api.localhost
    VITE_DEFAULT_BEARER_TOKEN=light-oss
@@ -176,7 +174,7 @@ Custom site domains must point to the gateway through DNS or hosts. The gateway 
 - Root `.env` is used by Docker Compose.
 - Root `.env.personal` is preferred by local backend/frontend commands when it exists.
 - Frontend settings saved in browser `localStorage` override `VITE_DEFAULT_API_BASE_URL` and `VITE_DEFAULT_BEARER_TOKEN`.
-- `APP_PUBLIC_BASE_URL` controls generated signed download URLs.
+- The signed download endpoint returns a relative API path, which the frontend resolves against its current API Base URL.
 - `APP_STORAGE_ROOT` should be a local path for direct local runs and `/data/storage` in Compose.
 - `APP_BEARER_TOKENS` is the Bearer Token allowlist. Multiple tokens are comma-separated.
 - Do not commit real production passwords, signing secrets, tokens, or domain configuration.

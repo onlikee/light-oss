@@ -943,14 +943,14 @@ func (h *apiHandler) signDownload(c *gin.Context) {
 		return
 	}
 
-	url, expiresAt, err := h.signService.GenerateDownloadURL(req.Bucket, req.ObjectKey, req.ExpiresInSeconds)
+	path, expiresAt, err := h.signService.GenerateDownloadPath(req.Bucket, req.ObjectKey, req.ExpiresInSeconds)
 	if err != nil {
 		response.Error(c, err)
 		return
 	}
 
 	response.JSON(c, http.StatusOK, gin.H{
-		"url":        url,
+		"path":       path,
 		"expires_at": expiresAt,
 	})
 }

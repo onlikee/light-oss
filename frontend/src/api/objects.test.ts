@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AppSettings } from "../lib/settings";
 import {
+  buildApiURL,
   buildPublicObjectURL,
   checkObjectExists,
   deleteRecycleBinObjects,
@@ -200,6 +201,17 @@ describe("objects api helpers", () => {
       ),
     ).toBe(
       "https://api.localhost/api/v1/buckets/demo/objects/docs/sample%2Epostgresql%2Esql",
+    );
+  });
+
+  it("builds an API URL from the configured base and a relative path", () => {
+    expect(
+      buildApiURL(
+        "https://api.localhost/",
+        "/api/v1/buckets/demo/objects/private.txt?expires=1&signature=test",
+      ),
+    ).toBe(
+      "https://api.localhost/api/v1/buckets/demo/objects/private.txt?expires=1&signature=test",
     );
   });
 

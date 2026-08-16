@@ -12,22 +12,20 @@ import (
 )
 
 type SignService struct {
-	signer        *signing.Signer
-	publicBaseURL string
-	defaultTTL    int64
-	maxTTL        int64
+	signer     *signing.Signer
+	defaultTTL int64
+	maxTTL     int64
 }
 
-func NewSignService(signer *signing.Signer, publicBaseURL string, defaultTTL int64, maxTTL int64) *SignService {
+func NewSignService(signer *signing.Signer, defaultTTL int64, maxTTL int64) *SignService {
 	return &SignService{
-		signer:        signer,
-		publicBaseURL: strings.TrimRight(publicBaseURL, "/"),
-		defaultTTL:    defaultTTL,
-		maxTTL:        maxTTL,
+		signer:     signer,
+		defaultTTL: defaultTTL,
+		maxTTL:     maxTTL,
 	}
 }
 
-func (s *SignService) GenerateDownloadURL(bucketName string, objectKey string, expiresInSeconds int64) (string, int64, error) {
+func (s *SignService) GenerateDownloadPath(bucketName string, objectKey string, expiresInSeconds int64) (string, int64, error) {
 	if err := ValidateBucketName(bucketName); err != nil {
 		return "", 0, err
 	}
@@ -45,12 +43,12 @@ func (s *SignService) GenerateDownloadURL(bucketName string, objectKey string, e
 	expiresAt := time.Now().UTC().Add(time.Duration(expiresInSeconds) * time.Second).Unix()
 	signature := s.signer.SignDownload(bucketName, objectKey, expiresAt)
 
-	baseURL := fmt.Sprintf("%s/api/v1/buckets/%s/objects/%s", s.publicBaseURL, bucketName, escapeObjectKey(objectKey))
+	path := fmt.Sprintf("/api/v1/buckets/%s/objects/%s", bucketName, escapeObjectKey(objectKey))
 	values := url.Values{}
 	values.Set("expires", fmt.Sprintf("%d", expiresAt))
 	values.Set("signature", signature)
 
-	return baseURL + "?" + values.Encode(), expiresAt, nil
+	return path + "?" + values.Encode(), expiresAt, nil
 }
 
 func (s *SignService) VerifyDownload(bucketName string, objectKey string, expiresAt int64, signature string) error {

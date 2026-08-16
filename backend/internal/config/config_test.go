@@ -154,7 +154,6 @@ func resetConfigEnv(t *testing.T) {
 	for _, key := range []string{
 		"APP_ENV",
 		"APP_ADDR",
-		"APP_PUBLIC_BASE_URL",
 		"DB_DSN",
 		"DB_MAX_OPEN_CONNS",
 		"DB_MAX_IDLE_CONNS",

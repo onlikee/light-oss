@@ -1710,8 +1710,8 @@
       "post": {
         "tags": ["签名"],
         "operationId": "signDownload",
-        "summary": "生成签名下载 URL",
-        "description": "为 GET 对象下载创建临时签名 URL。当客户端传入 0 或负值时，`expires_in_seconds` 默认为 `300`，且拒绝大于 `86400` 的值。",
+        "summary": "生成签名下载路径",
+        "description": "为 GET 对象下载创建临时签名相对 API 路径。客户端使用当前 API Base URL 补全该路径。当客户端传入 0 或负值时，`expires_in_seconds` 默认为 `300`，且拒绝大于 `86400` 的值。",
         "security": [
           {
             "bearerAuth": []
@@ -1729,7 +1729,7 @@
         },
         "responses": {
           "200": {
-            "description": "已签名的下载网址。",
+            "description": "已签名的相对下载路径。",
             "content": {
               "application/json": {
                 "schema": {
@@ -2377,13 +2377,13 @@
           }
         }
       },
-      "SignedDownloadResult": {
+      "SignedDownloadPathResult": {
         "type": "object",
-        "required": ["url", "expires_at"],
+        "required": ["path", "expires_at"],
         "properties": {
-          "url": {
+          "path": {
             "type": "string",
-            "format": "uri"
+            "description": "包含过期时间和签名查询参数的相对 API 路径。客户端使用当前 API Base URL 补全该路径。"
           },
           "expires_at": {
             "type": "integer",
@@ -2835,7 +2835,7 @@
                 "type": "string"
               },
               "data": {
-                "$ref": "#/components/schemas/SignedDownloadResult"
+                "$ref": "#/components/schemas/SignedDownloadPathResult"
               }
             }
           }
