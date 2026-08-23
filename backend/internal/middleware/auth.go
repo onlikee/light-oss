@@ -13,21 +13,23 @@ import (
 )
 
 type TokenValidator struct {
-	allowed map[string]struct{}
+	allowedScopes map[string]struct{}
 }
 
+const authenticatedBearerScopeKey = "authenticated_bearer_scope"
+
 func NewTokenValidator(tokens []string) *TokenValidator {
-	allowed := make(map[string]struct{}, len(tokens))
+	allowedScopes := make(map[string]struct{}, len(tokens))
 	for _, token := range tokens {
-		allowed[token] = struct{}{}
+		allowedScopes[bearerScope(token)] = struct{}{}
 	}
 
-	return &TokenValidator{allowed: allowed}
+	return &TokenValidator{allowedScopes: allowedScopes}
 }
 
 func (v *TokenValidator) RequireBearer() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if !v.HasValidRequest(c.GetHeader("Authorization")) {
+		if !v.HasValidBearer(c) {
 			response.Error(c, apperrors.New(http.StatusUnauthorized, "unauthorized", "missing or invalid bearer token"))
 			c.Abort()
 			return
@@ -38,30 +40,42 @@ func (v *TokenValidator) RequireBearer() gin.HandlerFunc {
 }
 
 func (v *TokenValidator) HasValidBearer(c *gin.Context) bool {
-	return v.HasValidRequest(c.GetHeader("Authorization"))
-}
-
-func (v *TokenValidator) HasValidRequest(authorization string) bool {
-	parts := strings.SplitN(strings.TrimSpace(authorization), " ", 2)
-	if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
+	scope, ok := v.validatedScope(c.GetHeader("Authorization"))
+	if !ok {
 		return false
 	}
 
-	_, ok := v.allowed[strings.TrimSpace(parts[1])]
+	c.Set(authenticatedBearerScopeKey, scope)
+	return true
+}
+
+func (v *TokenValidator) HasValidRequest(authorization string) bool {
+	_, ok := v.validatedScope(authorization)
 	return ok
 }
 
-func BearerScope(authorization string) (string, bool) {
+func (v *TokenValidator) validatedScope(authorization string) (string, bool) {
 	parts := strings.SplitN(strings.TrimSpace(authorization), " ", 2)
 	if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
 		return "", false
 	}
 
-	token := strings.TrimSpace(parts[1])
-	if token == "" {
+	scope := bearerScope(strings.TrimSpace(parts[1]))
+	_, ok := v.allowedScopes[scope]
+	return scope, ok
+}
+
+func AuthenticatedBearerScope(c *gin.Context) (string, bool) {
+	scope, ok := c.Get(authenticatedBearerScopeKey)
+	if !ok {
 		return "", false
 	}
 
+	value, ok := scope.(string)
+	return value, ok
+}
+
+func bearerScope(token string) string {
 	sum := sha256.Sum256([]byte(token))
-	return hex.EncodeToString(sum[:]), true
+	return hex.EncodeToString(sum[:])
 }

@@ -1,0 +1,55 @@
+name: Backend quality
+
+on:
+  push:
+    paths:
+      - "backend/**"
+      - "Makefile"
+      - "docker-compose.yml"
+      - ".github/workflows/backend-quality.yml"
+  pull_request:
+    paths:
+      - "backend/**"
+      - "Makefile"
+      - "docker-compose.yml"
+      - ".github/workflows/backend-quality.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: test-password
+          MYSQL_ROOT_HOST: "%"
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -ptest-password --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      MYSQL_TEST_DSN: root:test-password@tcp(127.0.0.1:3306)/mysql?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+      - name: Unit and MySQL integration tests
+        run: go test ./... -count=1
+      - name: Race detector
+        run: go test -race ./... -count=1
+      - name: Vet
+        run: go vet ./...
+      - name: Format check
+        run: test -z "$(gofmt -l .)"

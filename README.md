@@ -83,6 +83,8 @@ The simplest local setup is to run MySQL with Docker, then run the backend and f
    ```env
    APP_ENV=development
    APP_ADDR=:8080
+   APP_STORAGE_MODE=local
+   APP_RATE_LIMIT_BACKEND=local
    APP_STORAGE_ROOT=./light-oss-data/storage
    APP_BEARER_TOKENS=light-oss
    APP_SIGNING_SECRET=change-me-in-local-dev
@@ -129,6 +131,8 @@ Use this mode when you want to verify the full gateway and hosted-site domain fl
 1. Adjust the root `.env` for gateway mode.
 
    ```env
+   APP_STORAGE_MODE=local
+   APP_RATE_LIMIT_BACKEND=local
    APP_STORAGE_ROOT=/data/storage
    VITE_DEFAULT_API_BASE_URL=http://api.localhost
    VITE_DEFAULT_BEARER_TOKEN=light-oss
@@ -171,20 +175,32 @@ Custom site domains must point to the gateway through DNS or hosts. The gateway 
 
 ## Configuration Notes
 
-- Root `.env` is used by Docker Compose.
+- Root `.env` is used by Docker Compose. Compose pins the in-container listener and storage root to `:8080` and `/data/storage` so host paths cannot leak into container configuration.
 - Root `.env.personal` is preferred by local backend/frontend commands when it exists.
 - Frontend settings saved in browser `localStorage` override `VITE_DEFAULT_API_BASE_URL` and `VITE_DEFAULT_BEARER_TOKEN`.
 - The signed download endpoint returns a relative API path, which the frontend resolves against its current API Base URL.
-- `APP_STORAGE_ROOT` should be a local path for direct local runs and `/data/storage` in Compose.
+- `APP_STORAGE_MODE` defaults to `local`, in which case the service creates `APP_STORAGE_ROOT` as needed. Use a host path for direct local runs; the default Compose setup uses `/data/storage`.
+- `APP_STORAGE_MODE=shared-filesystem` selects an operator-provided shared volume. `APP_STORAGE_ROOT` must already be mounted because the service will not create a missing shared root. The volume must provide read-write-many access, coherent cross-instance visibility, atomic rename within one filesystem, and read/write/delete permissions. A root-level `.storage-id` sentinel is bound to MySQL so an instance mounted to a different volume is rejected.
+- Object quota is coordinated by the MySQL `used_bytes` / `reserved_bytes` ledger. `APP_CHUNK_SIZE_BYTES` controls streaming reservation increments, and `APP_STORAGE_STAGING_TTL_SECONDS` controls recovery of abandoned staging blobs.
+- `DB_CONNECT_TIMEOUT_SECONDS`, `DB_READ_TIMEOUT_SECONDS`, and `DB_WRITE_TIMEOUT_SECONDS` enforce finite MySQL network waits (defaults: 5/300/30 seconds), including an upper bound on an uncertain transaction commit response.
 - `APP_BEARER_TOKENS` is the Bearer Token allowlist. Multiple tokens are comma-separated.
+- `APP_RATE_LIMIT_BACKEND` defaults to `local`. Set it to `mysql` to coordinate every IP and authenticated route bucket through the shared `rate_limit_buckets` table; all replicas must use identical rate and burst settings. A database decision error fails closed with HTTP 503 instead of bypassing the limit.
+- Rate limiting has two levels: `APP_RATE_LIMIT_IP_RPS` / `APP_RATE_LIMIT_IP_BURST` apply a coarse client-IP budget before authentication, while `APP_RATE_LIMIT_RPS` / `APP_RATE_LIMIT_BURST` are the authenticated management API budget.
+- Public object/site downloads, uploads, signed-link creation, and health checks use independent budgets. Override them with `APP_RATE_LIMIT_PUBLIC_*`, `APP_RATE_LIMIT_UPLOAD_*`, `APP_RATE_LIMIT_SIGN_*`, and `APP_RATE_LIMIT_HEALTH_*`; when omitted, they inherit the IP or management budget shown above.
+- `APP_RATE_LIMIT_CACHE_TTL_SECONDS` controls local-cache eviction and shared MySQL bucket expiry; `APP_RATE_LIMIT_CACHE_MAX_ENTRIES` is a hard cap for both the local cache and shared MySQL buckets. At shared capacity, a new key receives 429 while existing keys retain their buckets; expired rows release capacity. `APP_TRUSTED_PROXIES` is a comma-separated allowlist of exact gateway IP addresses or CIDRs; leave it empty to ignore forwarded client-IP headers, and never use an all-address range.
+- `shared-filesystem` is covered by a two-instance test against one MySQL database and shared root, including cross-instance upload/read/overwrite/cleanup and lease/staging takeover. The MySQL limiter is also covered by a two-Router concurrency test that proves one shared burst. The backend must remain at `replicas: 1` when `APP_STORAGE_MODE=local` or `APP_RATE_LIMIT_BACKEND=local`; horizontal scaling requires both shared modes and validation against the actual shared volume described in the runbook.
 - Do not commit real production passwords, signing secrets, tokens, or domain configuration.
 
 ## API and Documentation
 
 - OpenAPI document: `backend/docs/openapi.apifox.json`
+- Upload performance smoke baseline: `backend/docs/upload-performance-baseline.zh-CN.md`
+- Blob ledger, reconciliation, and migration runbook: `backend/docs/storage-lifecycle-operations.zh-CN.md`
+- Legacy multipart-upload table isolation note: `backend/docs/legacy-upload-session-tables.zh-CN.md`
 - Main authenticated API prefix: `/api/v1`
-- Public health check: `GET /healthz`
+- Liveness: `GET /livez`; readiness: `GET /readyz`; compatibility health check: `GET /healthz`
 - Authenticated health check: `GET /api/v1/healthz`
+- Authenticated runtime metrics: `GET /api/v1/system/metrics`
 - Object API path keys are full object paths, so nested `/` segments act as directory-like prefixes.
 - Static sites only serve `public` objects.
 - Successful JSON responses usually use `{"request_id":"...","data":...}`.
@@ -211,9 +227,18 @@ make test
 make lint
 
 cd backend && go test ./...
+cd backend && go test -race ./...
+cd backend && go vet ./...
+cd backend && gofmt -l .
 cd frontend && npm test
 cd frontend && npm run lint
 cd frontend && npm run build
+```
+
+Run managed-blob reconciliation and exit (orphans are registered and reported, never deleted automatically):
+
+```bash
+cd backend && go run ./cmd/server -reconcile-storage-only
 ```
 
 Useful logs in Compose mode:
@@ -227,7 +252,7 @@ docker compose logs -f gateway
 
 ## Known Limits
 
-- Object content is stored on the local filesystem, not in distributed storage.
+- Object content is stored on a local or operator-provided shared filesystem, not an object-storage service.
 - Static site hosting only serves public objects.
 - Gateway mode currently supports HTTP only.
 - The project is a lightweight OSS MVP, not a full S3-compatible implementation.

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"net/http"
 
-	"go.uber.org/zap"
 	"gorm.io/gorm"
 
 	"light-oss/backend/internal/model"
@@ -18,28 +17,22 @@ type BucketService struct {
 	objectRepo  *repository.ObjectRepository
 	recycleRepo *repository.RecycleBinRepository
 	siteRepo    *repository.SiteRepository
-	quota       *StorageQuotaService
-	gormDB      *gorm.DB
-	logger      *zap.Logger
+	blobs       *BlobLifecycleService
 }
 
 func NewBucketService(
-	logger *zap.Logger,
-	gormDB *gorm.DB,
 	bucketRepo *repository.BucketRepository,
 	objectRepo *repository.ObjectRepository,
 	recycleRepo *repository.RecycleBinRepository,
 	siteRepo *repository.SiteRepository,
-	quota *StorageQuotaService,
+	blobLifecycle *BlobLifecycleService,
 ) *BucketService {
 	return &BucketService{
 		bucketRepo:  bucketRepo,
 		objectRepo:  objectRepo,
 		recycleRepo: recycleRepo,
 		siteRepo:    siteRepo,
-		quota:       quota,
-		gormDB:      gormDB,
-		logger:      logger,
+		blobs:       blobLifecycle,
 	}
 }
 
@@ -74,9 +67,7 @@ func (s *BucketService) Delete(ctx context.Context, name string) error {
 		return err
 	}
 
-	storagePaths := make([]string, 0)
-
-	err := s.gormDB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	err := s.blobs.Publish(ctx, nil, func(tx *gorm.DB) ([]string, error) {
 		bucketRepo := s.bucketRepo.WithDB(tx)
 		objectRepo := s.objectRepo.WithDB(tx)
 		recycleRepo := s.recycleRepo.WithDB(tx)
@@ -84,64 +75,54 @@ func (s *BucketService) Delete(ctx context.Context, name string) error {
 
 		if _, err := bucketRepo.LockByName(ctx, name); err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return err
+				return nil, err
 			}
 
-			return apperrors.Wrap(http.StatusInternalServerError, "bucket_lookup_failed", "failed to lock bucket", err)
+			return nil, apperrors.Wrap(http.StatusInternalServerError, "bucket_lookup_failed", "failed to lock bucket", err)
 		}
 
 		objects, err := objectRepo.ListAllByBucket(ctx, name)
 		if err != nil {
-			return apperrors.Wrap(http.StatusInternalServerError, "bucket_lookup_failed", "failed to load bucket objects", err)
+			return nil, apperrors.Wrap(http.StatusInternalServerError, "bucket_lookup_failed", "failed to load bucket objects", err)
 		}
 		recycleObjects, err := recycleRepo.ListAllByBucket(ctx, name)
 		if err != nil {
-			return apperrors.Wrap(http.StatusInternalServerError, "bucket_lookup_failed", "failed to load recycle bin objects", err)
+			return nil, apperrors.Wrap(http.StatusInternalServerError, "bucket_lookup_failed", "failed to load recycle bin objects", err)
 		}
 
-		seenStoragePaths := make(map[string]struct{}, len(objects)+len(recycleObjects))
+		storagePaths := make([]string, 0, len(objects)+len(recycleObjects))
 		for _, object := range objects {
 			if object.StoragePath == "" {
 				continue
 			}
-			if _, exists := seenStoragePaths[object.StoragePath]; exists {
-				continue
-			}
-
-			seenStoragePaths[object.StoragePath] = struct{}{}
 			storagePaths = append(storagePaths, object.StoragePath)
 		}
 		for _, object := range recycleObjects {
 			if object.StoragePath == "" {
 				continue
 			}
-			if _, exists := seenStoragePaths[object.StoragePath]; exists {
-				continue
-			}
-
-			seenStoragePaths[object.StoragePath] = struct{}{}
 			storagePaths = append(storagePaths, object.StoragePath)
 		}
 
 		if err := siteRepo.DeleteByBucket(ctx, name); err != nil {
-			return apperrors.Wrap(http.StatusInternalServerError, "bucket_delete_failed", "failed to delete bucket sites", err)
+			return nil, apperrors.Wrap(http.StatusInternalServerError, "bucket_delete_failed", "failed to delete bucket sites", err)
 		}
 		if err := recycleRepo.HardDeleteByBucket(ctx, name); err != nil {
-			return apperrors.Wrap(http.StatusInternalServerError, "bucket_delete_failed", "failed to delete recycle bin objects", err)
+			return nil, apperrors.Wrap(http.StatusInternalServerError, "bucket_delete_failed", "failed to delete recycle bin objects", err)
 		}
 		if err := objectRepo.HardDeleteByBucket(ctx, name); err != nil {
-			return apperrors.Wrap(http.StatusInternalServerError, "bucket_delete_failed", "failed to delete bucket objects", err)
+			return nil, apperrors.Wrap(http.StatusInternalServerError, "bucket_delete_failed", "failed to delete bucket objects", err)
 		}
 
 		deleted, err := bucketRepo.DeleteByName(ctx, name)
 		if err != nil {
-			return apperrors.Wrap(http.StatusInternalServerError, "bucket_delete_failed", "failed to delete bucket", err)
+			return nil, apperrors.Wrap(http.StatusInternalServerError, "bucket_delete_failed", "failed to delete bucket", err)
 		}
 		if !deleted {
-			return gorm.ErrRecordNotFound
+			return nil, gorm.ErrRecordNotFound
 		}
 
-		return nil
+		return storagePaths, nil
 	})
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -152,12 +133,6 @@ func (s *BucketService) Delete(ctx context.Context, name string) error {
 		}
 
 		return apperrors.Wrap(http.StatusInternalServerError, "bucket_delete_failed", "failed to delete bucket", err)
-	}
-
-	if len(storagePaths) > 0 {
-		writeSession := s.quota.BeginWrite()
-		writeSession.CleanupUnreferencedPaths(ctx, storagePaths)
-		writeSession.Close()
 	}
 
 	return nil

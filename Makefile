@@ -1,7 +1,7 @@
 BACKEND_DIR=backend
 FRONTEND_DIR=frontend
 
-.PHONY: up down backend-test frontend-test test lint fmt frontend-install
+.PHONY: up down backend-test backend-vet backend-format-check frontend-test frontend-lint test lint fmt frontend-install
 
 up:
 	docker compose up --build
@@ -12,6 +12,12 @@ down:
 backend-test:
 	cd $(BACKEND_DIR) && go test ./...
 
+backend-vet:
+	cd $(BACKEND_DIR) && go vet ./...
+
+backend-format-check:
+	cd $(BACKEND_DIR) && test -z "$$(gofmt -l .)"
+
 frontend-install:
 	cd $(FRONTEND_DIR) && npm install
 
@@ -20,8 +26,10 @@ frontend-test:
 
 test: backend-test frontend-test
 
-lint:
+frontend-lint:
 	cd $(FRONTEND_DIR) && npm run lint
+
+lint: backend-vet backend-format-check frontend-lint
 
 fmt:
 	cd $(BACKEND_DIR) && gofmt -w $$(find . -name '*.go')

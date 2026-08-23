@@ -182,7 +182,9 @@ func mapRuntimeOS(goos string) string {
 	}
 }
 
-func directorySize(root string) (uint64, error) {
+var directorySize = calculateDirectorySize
+
+func calculateDirectorySize(root string) (uint64, error) {
 	var total uint64
 
 	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {

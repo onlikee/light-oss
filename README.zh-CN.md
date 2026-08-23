@@ -83,6 +83,8 @@ light-oss 适合内部工具、原型系统、轻量私有部署，以及需要�
    ```env
    APP_ENV=development
    APP_ADDR=:8080
+   APP_STORAGE_MODE=local
+   APP_RATE_LIMIT_BACKEND=local
    APP_STORAGE_ROOT=./light-oss-data/storage
    APP_BEARER_TOKENS=light-oss
    APP_SIGNING_SECRET=change-me-in-local-dev
@@ -129,6 +131,8 @@ light-oss 适合内部工具、原型系统、轻量私有部署，以及需要�
 1. 调整根目录 `.env`。
 
    ```env
+   APP_STORAGE_MODE=local
+   APP_RATE_LIMIT_BACKEND=local
    APP_STORAGE_ROOT=/data/storage
    VITE_DEFAULT_API_BASE_URL=http://api.localhost
    VITE_DEFAULT_BEARER_TOKEN=light-oss
@@ -171,20 +175,32 @@ light-oss 适合内部工具、原型系统、轻量私有部署，以及需要�
 
 ## 配置说明
 
-- 根目录 `.env` 用于 Docker Compose。
+- 根目录 `.env` 用于 Docker Compose；容器内监听地址和存储根目录由 Compose 固定为 `:8080` 与 `/data/storage`，避免误用主机路径。
 - 本地后端/前端命令会优先读取根目录 `.env.personal`。
 - 浏览器 `localStorage` 中保存的前端设置会覆盖 `VITE_DEFAULT_API_BASE_URL` 和 `VITE_DEFAULT_BEARER_TOKEN`。
 - 签名下载接口返回相对 API 路径，前端使用当前 API Base URL 补全下载地址。
-- `APP_STORAGE_ROOT` 本地直跑时应是本机路径，Compose 模式下应是 `/data/storage`。
+- `APP_STORAGE_MODE` 默认为 `local`，此时服务会按需创建 `APP_STORAGE_ROOT`；本地直跑时应使用本机路径，默认 Compose 使用 `/data/storage`。
+- `APP_STORAGE_MODE=shared-filesystem` 用于多实例共享文件卷。`APP_STORAGE_ROOT` 必须在启动前完成挂载，服务不会自动创建缺失目录；该卷必须提供 RWX、跨实例一致可见、同一文件系统内原子 rename，以及读/写/删除权限。根目录 `.storage-id` 会与数据库绑定，用来拒绝误挂其他卷的实例。
+- 对象配额以 MySQL 中的 `used_bytes` / `reserved_bytes` 台账为准；`APP_CHUNK_SIZE_BYTES` 控制流式预留块大小，`APP_STORAGE_STAGING_TTL_SECONDS` 控制崩溃后 staging 的回收期限。
+- `DB_CONNECT_TIMEOUT_SECONDS` / `DB_READ_TIMEOUT_SECONDS` / `DB_WRITE_TIMEOUT_SECONDS` 为 MySQL 网络等待设置有界超时（默认 5/300/30 秒），包括为事务提交响应不确定窗口设置上限。
 - `APP_BEARER_TOKENS` 是 Bearer Token 白名单，多个 token 用逗号分隔。
+- `APP_RATE_LIMIT_BACKEND` 默认为 `local`。设置为 `mysql` 后，鉴权前 IP 桶和各类鉴权后路由桶都通过共享的 `rate_limit_buckets` 表协调；所有副本必须使用一致的速率与 burst 配置。数据库判定失败时会 fail closed 并返回 HTTP 503，不会绕过限流。
+- 限流分为两级：鉴权前由 `APP_RATE_LIMIT_IP_RPS` / `APP_RATE_LIMIT_IP_BURST` 按客户端 IP 粗限流，鉴权后的管理 API 使用 `APP_RATE_LIMIT_RPS` / `APP_RATE_LIMIT_BURST` 身份预算。
+- 公开对象/站点下载、上传、签名链接创建和健康检查使用独立预算，可分别通过 `APP_RATE_LIMIT_PUBLIC_*`、`APP_RATE_LIMIT_UPLOAD_*`、`APP_RATE_LIMIT_SIGN_*`、`APP_RATE_LIMIT_HEALTH_*` 覆盖；未配置时继承上述 IP 或管理预算。
+- `APP_RATE_LIMIT_CACHE_TTL_SECONDS` 同时控制本地缓存淘汰与共享 MySQL 桶的过期时间；`APP_RATE_LIMIT_CACHE_MAX_ENTRIES` 对本地缓存和 MySQL 共享桶都设置硬上限。共享容量耗尽时，新 key 返回 429，已有 key 仍按原桶判定；过期行释放容量。`APP_TRUSTED_PROXIES` 是以逗号分隔的网关精确 IP 或 CIDR 白名单；留空时忽略转发客户端 IP 请求头，禁止配置全地址范围。
+- `shared-filesystem` 已覆盖同一 MySQL 与共享卷上的双实例交叉上传、读取、覆盖、清理及 lease/staging 故障接管测试；MySQL limiter 也已通过双 Router 并发测试，证明只共享一个 burst。`APP_STORAGE_MODE=local` 或 `APP_RATE_LIMIT_BACKEND=local` 时，后端必须保持 `replicas: 1`；横向扩容必须同时启用两种共享模式，并按运维手册复验实际共享卷。
 - 不要把真实生产密码、签名密钥、token 或域名配置提交到公开仓库。
 
 ## API 与文档
 
 - OpenAPI 文档：`backend/docs/openapi.apifox.json`
+- 上传性能烟测：`backend/docs/upload-performance-baseline.zh-CN.md`
+- Blob 台账、对账与迁移操作：`backend/docs/storage-lifecycle-operations.zh-CN.md`
+- 历史分片上传表隔离说明：`backend/docs/legacy-upload-session-tables.zh-CN.md`
 - 主要鉴权 API 前缀：`/api/v1`
-- 公开健康检查：`GET /healthz`
+- 存活检查：`GET /livez`；就绪检查：`GET /readyz`；兼容健康检查：`GET /healthz`
 - 鉴权健康检查：`GET /api/v1/healthz`
+- 鉴权运行时指标：`GET /api/v1/system/metrics`
 - 对象 API 路径里的 key 是完整对象路径，嵌套 `/` 会表现为类似目录的前缀。
 - 静态站点只会服务 public 对象。
 - 成功 JSON 响应通常为 `{"request_id":"...","data":...}`。
@@ -211,9 +227,18 @@ make test
 make lint
 
 cd backend && go test ./...
+cd backend && go test -race ./...
+cd backend && go vet ./...
+cd backend && gofmt -l .
 cd frontend && npm test
 cd frontend && npm run lint
 cd frontend && npm run build
+```
+
+只执行受管 Blob 对账并退出（会登记并报告 orphan，不会自动删除）：
+
+```bash
+cd backend && go run ./cmd/server -reconcile-storage-only
 ```
 
 Compose 模式下常用日志：

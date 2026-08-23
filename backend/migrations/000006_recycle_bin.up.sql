@@ -16,7 +16,7 @@ CREATE TABLE recycle_bin_objects (
     KEY idx_recycle_bin_objects_bucket (bucket_name),
     KEY idx_recycle_bin_objects_storage_path (storage_path),
     CONSTRAINT fk_recycle_bin_objects_bucket FOREIGN KEY (bucket_name) REFERENCES buckets(name) ON UPDATE CASCADE ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB;
 
 INSERT INTO recycle_bin_objects (
     bucket_name,

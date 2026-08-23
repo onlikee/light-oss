@@ -3,7 +3,7 @@
   "info": {
     "title": "Light OSS API",
     "version": "1.0.0",
-    "description": "OpenAPI 3.0 JSON for APIFOX import. Route coverage is derived from backend/internal/handler/router.go and excludes site content routes outside /api/v1 and /healthz."
+    "description": "OpenAPI 3.0 JSON for APIFOX import. The documented path and method set is kept in sync with the Gin routes registered by the backend."
   },
   "servers": [
     {
@@ -29,13 +29,69 @@
       "name": "Objects"
     },
     {
+      "name": "Recycle Bin"
+    },
+    {
       "name": "Sites"
+    },
+    {
+      "name": "System"
     },
     {
       "name": "Signing"
     }
   ],
   "paths": {
+    "/livez": {
+      "get": {
+        "tags": ["Health"],
+        "operationId": "getLiveness",
+        "summary": "Liveness probe",
+        "description": "Lightweight unauthenticated process-liveness probe. A successful envelope contains status `ok` and the service version.",
+        "responses": {
+          "200": {
+            "description": "The backend process is alive.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/readyz": {
+      "get": {
+        "tags": ["Health"],
+        "operationId": "getReadiness",
+        "summary": "Readiness probe",
+        "description": "Unauthenticated readiness probe. The runtime check covers the database, migration state, configured BlobStore, and reconciled storage quota state.",
+        "responses": {
+          "200": {
+            "description": "The backend is ready. The successful envelope contains status `ready` and the service version.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "A readiness dependency failed. Error code: not_ready.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/healthz": {
       "get": {
         "tags": ["Health"],
@@ -62,6 +118,151 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/sites/{siteID}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/SiteIDParam"
+        }
+      ],
+      "get": {
+        "tags": ["Sites"],
+        "operationId": "downloadSiteRoot",
+        "summary": "Read the root document of a site",
+        "description": "Publicly serves the site's configured index document. Site and object lookup failures are returned as status-only website responses.",
+        "responses": {
+          "200": {
+            "description": "Site content.",
+            "headers": {
+              "Content-Type": {
+                "$ref": "#/components/headers/ContentTypeHeader"
+              },
+              "Content-Length": {
+                "$ref": "#/components/headers/ContentLengthHeader"
+              },
+              "ETag": {
+                "$ref": "#/components/headers/ETagHeader"
+              }
+            },
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The site identifier is invalid. No response body."
+          },
+          "404": {
+            "description": "The site or requested content was not found. A configured error document may be streamed with this status."
+          }
+        }
+      },
+      "head": {
+        "tags": ["Sites"],
+        "operationId": "headSiteRoot",
+        "summary": "Inspect the root document of a site",
+        "description": "Returns the same status and representation headers as GET without a response body.",
+        "responses": {
+          "200": {
+            "description": "Site content metadata.",
+            "headers": {
+              "Content-Type": {
+                "$ref": "#/components/headers/ContentTypeHeader"
+              },
+              "Content-Length": {
+                "$ref": "#/components/headers/ContentLengthHeader"
+              },
+              "ETag": {
+                "$ref": "#/components/headers/ETagHeader"
+              }
+            }
+          },
+          "400": {
+            "description": "The site identifier is invalid. No response body."
+          },
+          "404": {
+            "description": "The site or requested content was not found. No response body."
+          }
+        }
+      }
+    },
+    "/sites/{siteID}/{path}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/SiteIDParam"
+        },
+        {
+          "$ref": "#/components/parameters/SitePathParam"
+        }
+      ],
+      "get": {
+        "tags": ["Sites"],
+        "operationId": "downloadSitePath",
+        "summary": "Read a site path",
+        "description": "Publicly serves a file below the site's root prefix. Directory-style paths resolve to the configured index document; SPA fallback and error-document behavior follow the site configuration.",
+        "responses": {
+          "200": {
+            "description": "Site content.",
+            "headers": {
+              "Content-Type": {
+                "$ref": "#/components/headers/ContentTypeHeader"
+              },
+              "Content-Length": {
+                "$ref": "#/components/headers/ContentLengthHeader"
+              },
+              "ETag": {
+                "$ref": "#/components/headers/ETagHeader"
+              }
+            },
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The site identifier or content path is invalid. No response body."
+          },
+          "404": {
+            "description": "The site or requested content was not found. A configured fallback or error document may be streamed with this status."
+          }
+        }
+      },
+      "head": {
+        "tags": ["Sites"],
+        "operationId": "headSitePath",
+        "summary": "Inspect a site path",
+        "description": "Returns the same status and representation headers as GET without a response body.",
+        "responses": {
+          "200": {
+            "description": "Site content metadata.",
+            "headers": {
+              "Content-Type": {
+                "$ref": "#/components/headers/ContentTypeHeader"
+              },
+              "Content-Length": {
+                "$ref": "#/components/headers/ContentLengthHeader"
+              },
+              "ETag": {
+                "$ref": "#/components/headers/ETagHeader"
+              }
+            }
+          },
+          "400": {
+            "description": "The site identifier or content path is invalid. No response body."
+          },
+          "404": {
+            "description": "The site or requested content was not found. No response body."
           }
         }
       }
@@ -104,6 +305,159 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HealthzEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/system/metrics": {
+      "get": {
+        "tags": ["System"],
+        "operationId": "getSystemMetrics",
+        "summary": "Read runtime metrics",
+        "description": "Returns cumulative upload, transaction, cleanup, quota, database-pool, and per-rate-limiter counters for the current process.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current runtime metric snapshot.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid bearer token. Error code: unauthorized.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/system/stats": {
+      "get": {
+        "tags": ["System"],
+        "operationId": "getSystemStats",
+        "summary": "Read host and storage statistics",
+        "description": "Returns host OS, CPU, memory, disk, and logical storage-quota usage.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current system statistics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid bearer token. Error code: unauthorized.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "System or storage statistics could not be collected.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/system/storage/quota": {
+      "put": {
+        "tags": ["System"],
+        "operationId": "updateSystemStorageQuota",
+        "summary": "Update the logical storage quota",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["max_bytes"],
+                "properties": {
+                  "max_bytes": {
+                    "type": "integer",
+                    "format": "int64",
+                    "minimum": 1,
+                    "description": "New maximum logical storage usage in bytes."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated storage quota snapshot.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request body or max_bytes value is invalid. Error code: invalid_request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid bearer token. Error code: unauthorized.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The storage quota could not be updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
             }
@@ -230,7 +584,14 @@
             }
           }
         }
-      },
+      }
+    },
+    "/api/v1/buckets/{bucket}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/BucketParam"
+        }
+      ],
       "delete": {
         "tags": ["Buckets"],
         "operationId": "deleteBucket",
@@ -239,11 +600,6 @@
         "security": [
           {
             "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/BucketParam"
           }
         ],
         "responses": {
@@ -679,6 +1035,100 @@
         }
       }
     },
+    "/api/v1/buckets/{bucket}/entries/batch-delete": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/BucketParam"
+        }
+      ],
+      "post": {
+        "tags": ["Objects"],
+        "operationId": "deleteExplorerEntriesBatch",
+        "summary": "Delete explorer entries in a batch",
+        "description": "Deletes up to 200 files or directories. Directories are deleted recursively. Per-entry failures are returned in the successful result.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["items"],
+                "properties": {
+                  "items": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 200,
+                    "items": {
+                      "type": "object",
+                      "required": ["type", "path"],
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": ["file", "directory"]
+                        },
+                        "path": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 512,
+                          "description": "Object key for files; normalized folder path ending in '/' for directories."
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Batch result with deleted_count, failed_count, and failed_items.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The bucket name, request body, item count, type, or path is invalid. Error codes: invalid_request, invalid_bucket_name.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid bearer token. Error code: unauthorized.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bucket not found. Error code: bucket_not_found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buckets/{bucket}/objects": {
       "parameters": [
         {
@@ -770,7 +1220,7 @@
         "tags": ["Objects"],
         "operationId": "uploadObjectBatch",
         "summary": "Batch upload files with multipart/form-data",
-        "description": "manifest is a JSON string array. Each item declares file_field and relative_path. Additional file parts must use the exact field names referenced by manifest[].file_field.",
+        "description": "manifest is a JSON array encoded in its multipart field. Each item declares file_field and relative_path. Additional file parts must use the exact field names referenced by manifest[].file_field.",
         "security": [
           {
             "bearerAuth": []
@@ -1277,6 +1727,188 @@
         }
       }
     },
+    "/api/v1/recycle-bin/objects": {
+      "get": {
+        "tags": ["Recycle Bin"],
+        "operationId": "listRecycleBinObjects",
+        "summary": "List recycle-bin entries",
+        "description": "Lists logical file and directory entries from the recycle bin using cursor pagination.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "bucket",
+            "in": "query",
+            "required": false,
+            "description": "Optional bucket-name filter.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/ObjectListLimitQuery"
+          },
+          {
+            "$ref": "#/components/parameters/CursorQuery"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recycle-bin entries and next_cursor.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The bucket filter or cursor is invalid. Error codes: invalid_bucket_name, invalid_cursor.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid bearer token. Error code: unauthorized.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Recycle-bin entries could not be listed. Error code: recycle_bin_list_failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/recycle-bin/objects/restore": {
+      "post": {
+        "tags": ["Recycle Bin"],
+        "operationId": "restoreRecycleBinObjects",
+        "summary": "Restore recycle-bin entries",
+        "description": "Restores up to 200 logical recycle-bin entries. Duplicate IDs are processed once; per-entry failures are returned in the successful result.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecycleBinBatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Batch result with restored_count, failed_count, and failed_items.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request body or item_ids list is invalid. Error code: invalid_request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid bearer token. Error code: unauthorized.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/recycle-bin/objects/batch-delete": {
+      "post": {
+        "tags": ["Recycle Bin"],
+        "operationId": "deleteRecycleBinObjects",
+        "summary": "Permanently delete recycle-bin entries",
+        "description": "Permanently deletes up to 200 logical recycle-bin entries. Duplicate IDs are processed once; per-entry failures are returned in the successful result.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecycleBinBatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Batch result with deleted_count, failed_count, and failed_items.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request body or item_ids list is invalid. Error code: invalid_request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid bearer token. Error code: unauthorized.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/sites": {
       "get": {
         "tags": ["Sites"],
@@ -1488,6 +2120,120 @@
           },
           "500": {
             "description": "Site publish failed. Error codes: bucket_lookup_failed, batch_file_buffer_failed, batch_file_open_failed, object_store_failed, object_metadata_failed, site_create_failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sites/publish/object": {
+      "post": {
+        "tags": ["Sites"],
+        "operationId": "publishObjectSite",
+        "summary": "Publish an existing object as a site",
+        "description": "Makes an existing object public and creates a site whose root prefix and index document are derived from that object's key.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["bucket", "object_key", "domains"],
+                "properties": {
+                  "bucket": {
+                    "type": "string"
+                  },
+                  "object_key": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 512
+                  },
+                  "enabled": {
+                    "type": "boolean",
+                    "default": true
+                  },
+                  "error_document": {
+                    "type": "string"
+                  },
+                  "spa_fallback": {
+                    "type": "boolean",
+                    "default": true
+                  },
+                  "domains": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Existing object published as a site.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request body, bucket, object key, domains, or website configuration is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid bearer token. Error code: unauthorized.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The bucket or source object was not found. Error codes: bucket_not_found, object_not_found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A domain is already bound to another site. Error code: domain_conflict.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Object visibility or site creation failed.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1902,6 +2648,20 @@
           "minimum": 1
         }
       },
+      "SitePathParam": {
+        "name": "path",
+        "in": "path",
+        "required": true,
+        "allowReserved": true,
+        "style": "simple",
+        "explode": false,
+        "description": "Site-relative content path. This placeholder represents Gin's /*path wildcard and may contain '/'. Pass the raw path without a leading slash.",
+        "schema": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        }
+      },
       "PrefixQuery": {
         "name": "prefix",
         "in": "query",
@@ -2081,6 +2841,23 @@
       }
     },
     "schemas": {
+      "RecycleBinBatchRequest": {
+        "type": "object",
+        "required": ["item_ids"],
+        "properties": {
+          "item_ids": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 200,
+            "description": "Positive recycle-bin item identifiers. Duplicate values are accepted by the backend but processed once.",
+            "items": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 1
+            }
+          }
+        }
+      },
       "SuccessEnvelope": {
         "type": "object",
         "required": ["request_id", "data"],
@@ -2410,9 +3187,22 @@
             "description": "Visibility applied to every uploaded object. Defaults to private when omitted."
           },
           "manifest": {
-            "type": "string",
-            "description": "JSON string array of UploadBatchManifestItem objects.",
-            "example": "[{\"file_field\":\"file_0\",\"relative_path\":\"index.html\"},{\"file_field\":\"file_1\",\"relative_path\":\"assets/app.js\"}]"
+            "type": "array",
+            "maxItems": 2000,
+            "items": {
+              "$ref": "#/components/schemas/UploadBatchManifestItem"
+            },
+            "description": "JSON array of UploadBatchManifestItem objects encoded in the multipart field.",
+            "example": [
+              {
+                "file_field": "file_0",
+                "relative_path": "index.html"
+              },
+              {
+                "file_field": "file_1",
+                "relative_path": "assets/app.js"
+              }
+            ]
           }
         },
         "additionalProperties": {
@@ -2574,9 +3364,22 @@
             "default": "true"
           },
           "manifest": {
-            "type": "string",
-            "description": "JSON string array of UploadBatchManifestItem objects. Every relative_path must share the same top-level folder name.",
-            "example": "[{\"file_field\":\"file_0\",\"relative_path\":\"dist/index.html\"},{\"file_field\":\"file_1\",\"relative_path\":\"dist/assets/app.js\"}]"
+            "type": "array",
+            "maxItems": 2000,
+            "items": {
+              "$ref": "#/components/schemas/UploadBatchManifestItem"
+            },
+            "description": "JSON array of UploadBatchManifestItem objects encoded in the multipart field. Every relative_path must share the same top-level folder name.",
+            "example": [
+              {
+                "file_field": "file_0",
+                "relative_path": "dist/index.html"
+              },
+              {
+                "file_field": "file_1",
+                "relative_path": "dist/assets/app.js"
+              }
+            ]
           }
         },
         "additionalProperties": {

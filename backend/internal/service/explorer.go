@@ -307,15 +307,12 @@ func (s *ObjectService) DeleteFolder(ctx context.Context, bucketName string, fol
 		return err
 	}
 
-	writeSession := s.quota.BeginWrite()
-	defer writeSession.Close()
-
 	if recursive {
 		err := s.gormDB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 			objectRepo := s.objectRepo.WithDB(tx)
 			recycleRepo := s.recycleRepo.WithDB(tx)
 
-			objects, err := objectRepo.ListActiveByPrefixOrdered(ctx, bucketName, folderPath)
+			objects, err := objectRepo.ListActiveByPrefixForUpdateOrdered(ctx, bucketName, folderPath)
 			if err != nil {
 				return apperrors.Wrap(500, "folder_lookup_failed", "failed to inspect folder", err)
 			}
@@ -324,11 +321,12 @@ func (s *ObjectService) DeleteFolder(ctx context.Context, bucketName string, fol
 			}
 
 			deletedAt := time.Now().UTC()
-			if err := recycleRepo.CreateBatch(ctx, recycleBinObjectsFromFolderDelete(objects, folderPath, deletedAt)); err != nil {
+			deleteGroupID := newRecycleBinDeleteGroupID()
+			if err := recycleRepo.CreateBatch(ctx, recycleBinObjectsFromFolderDelete(objects, folderPath, deletedAt, deleteGroupID)); err != nil {
 				return apperrors.Wrap(500, "folder_delete_failed", "failed to move folder to recycle bin", err)
 			}
 
-			deleted, err := objectRepo.HardDeleteByPrefix(ctx, bucketName, folderPath)
+			deleted, err := objectRepo.HardDeleteByIDs(ctx, objectIDs(objects))
 			if err != nil {
 				return apperrors.Wrap(500, "folder_delete_failed", "failed to delete folder", err)
 			}
@@ -357,28 +355,34 @@ func (s *ObjectService) DeleteFolder(ctx context.Context, bucketName string, fol
 		objectRepo := s.objectRepo.WithDB(tx)
 		recycleRepo := s.recycleRepo.WithDB(tx)
 
-		hasOtherItems, err := objectRepo.ExistsActiveWithPrefixExceptKey(ctx, bucketName, folderPath, markerKey)
+		objects, err := objectRepo.ListActiveByPrefixForUpdateOrdered(ctx, bucketName, folderPath)
 		if err != nil {
 			return apperrors.Wrap(500, "folder_lookup_failed", "failed to inspect folder", err)
 		}
-		if hasOtherItems {
-			return apperrors.New(409, "folder_not_empty", "folder is not empty")
+		if len(objects) == 0 {
+			return gorm.ErrRecordNotFound
 		}
 
-		marker, err := objectRepo.FindActive(ctx, bucketName, markerKey)
-		if err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return gorm.ErrRecordNotFound
+		var marker *model.Object
+		for index := range objects {
+			if objects[index].ObjectKey == markerKey {
+				marker = &objects[index]
+				continue
 			}
 
-			return apperrors.Wrap(500, "folder_lookup_failed", "failed to inspect folder", err)
+			return apperrors.New(409, "folder_not_empty", "folder is not empty")
+		}
+		if marker == nil {
+			return gorm.ErrRecordNotFound
 		}
 
-		if err := recycleRepo.CreateBatch(ctx, recycleBinObjectsFromObjects([]model.Object{*marker}, time.Now().UTC())); err != nil {
+		deletedAt := time.Now().UTC()
+		deleteGroupID := newRecycleBinDeleteGroupID()
+		if err := recycleRepo.CreateBatch(ctx, recycleBinObjectsFromObjects([]model.Object{*marker}, deletedAt, deleteGroupID)); err != nil {
 			return apperrors.Wrap(500, "folder_delete_failed", "failed to move folder to recycle bin", err)
 		}
 
-		deleted, err := objectRepo.HardDelete(ctx, bucketName, markerKey)
+		deleted, err := objectRepo.HardDeleteByID(ctx, marker.ID)
 		if err != nil {
 			return apperrors.Wrap(500, "folder_delete_failed", "failed to delete folder", err)
 		}
@@ -411,38 +415,39 @@ type internalObjectInput struct {
 }
 
 func (s *ObjectService) createInternalObject(ctx context.Context, input internalObjectInput) (*model.Object, error) {
-	writeSession := s.quota.BeginWrite()
-	defer writeSession.Close()
-
-	stored, err := writeSession.Save(ctx, strings.NewReader(""))
+	staged, err := s.blobs.Stage(ctx, strings.NewReader(""))
 	if err != nil {
-		if appErr := apperrors.From(err); appErr.Code != "internal_error" {
-			return nil, err
-		}
-
-		return nil, apperrors.Wrap(500, "object_store_failed", "failed to store object", err)
+		return nil, stagedBlobStoreError(err)
 	}
 
 	object := &model.Object{
 		BucketName:       input.BucketName,
 		ObjectKey:        input.ObjectKey,
 		OriginalFilename: input.OriginalFilename,
-		StoragePath:      stored.RelativePath,
-		Size:             stored.Size,
+		StoragePath:      staged.StoragePath,
+		Size:             int64(staged.Size),
 		ContentType:      input.ContentType,
-		ETag:             stored.ETag,
+		ETag:             staged.ETag,
 		Visibility:       input.Visibility,
 		IsDeleted:        false,
 	}
 
-	saved, err := s.objectRepo.Upsert(ctx, object)
-	if err != nil {
-		writeSession.DeletePaths([]string{stored.RelativePath})
-		if isForeignKeyError(err) {
-			return nil, apperrors.New(http.StatusNotFound, "bucket_not_found", "bucket not found")
+	var saved *model.Object
+	err = s.blobs.Publish(ctx, []*StagedBlob{staged}, func(tx *gorm.DB) ([]string, error) {
+		saved, err = s.objectRepo.WithDB(tx).Create(ctx, object)
+		if err != nil {
+			if errors.Is(err, gorm.ErrDuplicatedKey) || isDuplicateError(err) {
+				return nil, apperrors.New(http.StatusConflict, "folder_exists", "folder already exists")
+			}
+			if isForeignKeyError(err) {
+				return nil, apperrors.New(http.StatusNotFound, "bucket_not_found", "bucket not found")
+			}
+			return nil, apperrors.Wrap(500, "object_metadata_failed", "failed to save object metadata", err)
 		}
-
-		return nil, apperrors.Wrap(500, "object_metadata_failed", "failed to save object metadata", err)
+		return nil, nil
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return saved, nil

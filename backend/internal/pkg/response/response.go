@@ -27,6 +27,7 @@ func JSON(c *gin.Context, status int, data any) {
 
 func Error(c *gin.Context, err error) {
 	appErr := apperrors.From(err)
+	_ = c.Error(err)
 	c.JSON(appErr.Status, envelope{
 		RequestID: requestid.Get(c.Request.Context()),
 		Error: &errorBody{

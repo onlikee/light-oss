@@ -25,8 +25,8 @@ func TestRecycleBinMigrationBackfillsDeletedObjects(t *testing.T) {
 			t.Fatalf("expected up migration to contain %q", snippet)
 		}
 	}
-	if strings.Contains(upText, "COLLATE=") {
-		t.Fatalf("expected up migration to inherit the database collation so bucket foreign keys stay compatible")
+	if strings.Contains(upText, "DEFAULT CHARSET=") || strings.Contains(upText, "COLLATE=") {
+		t.Fatalf("expected up migration to inherit the database character set and collation so bucket foreign keys stay compatible")
 	}
 
 	downSQL, err := os.ReadFile("000006_recycle_bin.down.sql")

@@ -17,7 +17,7 @@ type FolderArchive struct {
 	writeFn  func(io.Writer) error
 }
 
-func (a *FolderArchive) WriteTo(w io.Writer) error {
+func (a *FolderArchive) StreamTo(w io.Writer) error {
 	return a.writeFn(w)
 }
 

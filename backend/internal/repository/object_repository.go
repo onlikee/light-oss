@@ -81,6 +81,66 @@ func (r *ObjectRepository) Upsert(ctx context.Context, object *model.Object) (*m
 	return r.FindActive(ctx, object.BucketName, object.ObjectKey)
 }
 
+func (r *ObjectRepository) Create(ctx context.Context, object *model.Object) (*model.Object, error) {
+	now := time.Now().UTC()
+	object.CreatedAt = now
+	object.UpdatedAt = now
+	if err := r.db.WithContext(ctx).Create(object).Error; err != nil {
+		return nil, err
+	}
+	return object, nil
+}
+
+func (r *ObjectRepository) UpsertBatch(ctx context.Context, objects []model.Object, batchSize int) error {
+	if len(objects) == 0 {
+		return nil
+	}
+	if batchSize <= 0 {
+		batchSize = 100
+	}
+
+	now := time.Now().UTC()
+	for index := range objects {
+		objects[index].CreatedAt = now
+		objects[index].UpdatedAt = now
+	}
+
+	return r.db.WithContext(ctx).Clauses(clause.OnConflict{
+		Columns: []clause.Column{
+			{Name: "bucket_name"},
+			{Name: "object_key"},
+		},
+		DoUpdates: clause.AssignmentColumns([]string{
+			"original_filename",
+			"storage_path",
+			"size",
+			"content_type",
+			"etag",
+			"file_fingerprint",
+			"visibility",
+			"is_deleted",
+			"created_at",
+			"updated_at",
+		}),
+	}).CreateInBatches(&objects, batchSize).Error
+}
+
+func (r *ObjectRepository) CreateBatch(ctx context.Context, objects []model.Object, batchSize int) error {
+	if len(objects) == 0 {
+		return nil
+	}
+	if batchSize <= 0 {
+		batchSize = 100
+	}
+
+	now := time.Now().UTC()
+	for index := range objects {
+		objects[index].CreatedAt = now
+		objects[index].UpdatedAt = now
+	}
+	return r.db.WithContext(ctx).CreateInBatches(&objects, batchSize).Error
+}
+
 func (r *ObjectRepository) FindActive(ctx context.Context, bucketName string, objectKey string) (*model.Object, error) {
 	var object model.Object
 	err := r.db.WithContext(ctx).
@@ -90,6 +150,18 @@ func (r *ObjectRepository) FindActive(ctx context.Context, bucketName string, ob
 		return nil, err
 	}
 
+	return &object, nil
+}
+
+func (r *ObjectRepository) FindActiveForUpdate(ctx context.Context, bucketName string, objectKey string) (*model.Object, error) {
+	var object model.Object
+	err := r.db.WithContext(ctx).
+		Clauses(clause.Locking{Strength: "UPDATE"}).
+		Where("bucket_name = ? AND object_key = ? AND is_deleted = ?", bucketName, objectKey, false).
+		First(&object).Error
+	if err != nil {
+		return nil, err
+	}
 	return &object, nil
 }
 
@@ -204,6 +276,35 @@ func (r *ObjectRepository) FindActiveByKeys(ctx context.Context, bucketName stri
 	return objects, nil
 }
 
+func (r *ObjectRepository) FindActiveByKeysForUpdate(ctx context.Context, bucketName string, objectKeys []string) ([]model.Object, error) {
+	if len(objectKeys) == 0 {
+		return []model.Object{}, nil
+	}
+
+	var objects []model.Object
+	err := r.db.WithContext(ctx).
+		Clauses(clause.Locking{Strength: "UPDATE"}).
+		Where("bucket_name = ? AND is_deleted = ?", bucketName, false).
+		Where("object_key IN ?", objectKeys).
+		Find(&objects).Error
+	return objects, err
+}
+
+func (r *ObjectRepository) ListActiveByPrefixForUpdateOrdered(ctx context.Context, bucketName string, prefix string) ([]model.Object, error) {
+	var objects []model.Object
+
+	query := r.db.WithContext(ctx).
+		Clauses(clause.Locking{Strength: "UPDATE"}).
+		Where("bucket_name = ? AND is_deleted = ?", bucketName, false)
+
+	query = applyObjectKeyPrefixFilter(query, prefix)
+
+	err := query.
+		Order("object_key ASC").
+		Find(&objects).Error
+	return objects, err
+}
+
 func (r *ObjectRepository) ListAllByBucket(ctx context.Context, bucketName string) ([]model.Object, error) {
 	var objects []model.Object
 
@@ -295,6 +396,24 @@ func (r *ObjectRepository) HardDelete(ctx context.Context, bucketName string, ob
 		Where("bucket_name = ? AND object_key = ? AND is_deleted = ?", bucketName, objectKey, false).
 		Delete(&model.Object{})
 	return result.RowsAffected > 0, result.Error
+}
+
+func (r *ObjectRepository) HardDeleteByID(ctx context.Context, id uint64) (bool, error) {
+	result := r.db.WithContext(ctx).
+		Where("id = ? AND is_deleted = ?", id, false).
+		Delete(&model.Object{})
+	return result.RowsAffected > 0, result.Error
+}
+
+func (r *ObjectRepository) HardDeleteByIDs(ctx context.Context, ids []uint64) (int64, error) {
+	if len(ids) == 0 {
+		return 0, nil
+	}
+
+	result := r.db.WithContext(ctx).
+		Where("id IN ? AND is_deleted = ?", ids, false).
+		Delete(&model.Object{})
+	return result.RowsAffected, result.Error
 }
 
 func (r *ObjectRepository) HardDeleteByPrefix(ctx context.Context, bucketName string, prefix string) (int64, error) {

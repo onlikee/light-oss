@@ -31,6 +31,7 @@ type streamedUploadBatchFile struct {
 	Filename    string
 	ContentType string
 	TempPath    string
+	Size        uint64
 	PartCount   int
 }
 
@@ -132,6 +133,7 @@ func buildUploadBatchItemsFromManifest(
 			RelativePath:     relativePath,
 			OriginalFilename: originalFilename,
 			ContentType:      currentFilePart.ContentType,
+			Size:             &currentFilePart.Size,
 			Open: func() (io.ReadCloser, error) {
 				file, err := os.Open(currentFilePart.TempPath)
 				if err != nil {
@@ -187,7 +189,7 @@ func readBatchMultipartRequest(
 
 		filename := part.FileName()
 		contentType := part.Header.Get("Content-Type")
-		tempPath, err := writeMultipartFilePart(tempDir, part)
+		tempPath, size, err := writeMultipartFilePart(tempDir, part)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -198,6 +200,7 @@ func readBatchMultipartRequest(
 				Filename:    filename,
 				ContentType: contentType,
 				TempPath:    tempPath,
+				Size:        size,
 				PartCount:   1,
 			}
 			continue
@@ -256,35 +259,36 @@ func readMultipartFieldValue(part *multipart.Part) (string, error) {
 	return strings.TrimSpace(string(rawValue)), nil
 }
 
-func writeMultipartFilePart(tempDir string, part *multipart.Part) (string, error) {
+func writeMultipartFilePart(tempDir string, part *multipart.Part) (string, uint64, error) {
 	tempFile, err := os.CreateTemp(tempDir, "part-*")
 	if err != nil {
 		_ = part.Close()
-		return "", apperrors.Wrap(http.StatusInternalServerError, "batch_file_buffer_failed", "failed to buffer uploaded files", err)
+		return "", 0, apperrors.Wrap(http.StatusInternalServerError, "batch_file_buffer_failed", "failed to buffer uploaded files", err)
 	}
 
 	tempPath := tempFile.Name()
-	if _, err := io.Copy(tempFile, part); err != nil {
+	size, err := io.Copy(tempFile, part)
+	if err != nil {
 		_ = tempFile.Close()
 		_ = part.Close()
 		_ = os.Remove(tempPath)
 		if isRequestBodyTooLarge(err) {
-			return "", apperrors.New(http.StatusRequestEntityTooLarge, "payload_too_large", "request body exceeds configured upload size")
+			return "", 0, apperrors.New(http.StatusRequestEntityTooLarge, "payload_too_large", "request body exceeds configured upload size")
 		}
 
-		return "", apperrors.New(http.StatusBadRequest, "invalid_multipart_request", "multipart form is invalid")
+		return "", 0, apperrors.New(http.StatusBadRequest, "invalid_multipart_request", "multipart form is invalid")
 	}
 	if err := tempFile.Close(); err != nil {
 		_ = part.Close()
 		_ = os.Remove(tempPath)
-		return "", apperrors.Wrap(http.StatusInternalServerError, "batch_file_buffer_failed", "failed to buffer uploaded files", err)
+		return "", 0, apperrors.Wrap(http.StatusInternalServerError, "batch_file_buffer_failed", "failed to buffer uploaded files", err)
 	}
 	if err := part.Close(); err != nil {
 		_ = os.Remove(tempPath)
-		return "", apperrors.New(http.StatusBadRequest, "invalid_multipart_request", "multipart form is invalid")
+		return "", 0, apperrors.New(http.StatusBadRequest, "invalid_multipart_request", "multipart form is invalid")
 	}
 
-	return tempPath, nil
+	return tempPath, uint64(size), nil
 }
 
 func drainMultipartPart(part *multipart.Part) error {

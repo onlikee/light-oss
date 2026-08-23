@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 
 	"light-oss/backend/internal/model"
@@ -1088,13 +1089,14 @@ func seedLegacyRecycleBinDirectory(
 
 	markerKey := folderPath + ".light-oss-folder"
 	recycleItems := make([]model.RecycleBinObject, 0, len(objects))
+	deleteGroupID := uuid.NewString()
 	markerFound := false
 	for _, object := range objects {
 		if object.ObjectKey != markerKey {
 			continue
 		}
 
-		recycleItems = append(recycleItems, recycleBinObjectFromActiveObject(object, deletedAt))
+		recycleItems = append(recycleItems, recycleBinObjectFromActiveObject(object, deletedAt, deleteGroupID))
 		markerFound = true
 		break
 	}
@@ -1107,7 +1109,7 @@ func seedLegacyRecycleBinDirectory(
 			continue
 		}
 
-		recycleItems = append(recycleItems, recycleBinObjectFromActiveObject(object, deletedAt))
+		recycleItems = append(recycleItems, recycleBinObjectFromActiveObject(object, deletedAt, deleteGroupID))
 	}
 
 	if err := db.Create(&recycleItems).Error; err != nil {
@@ -1121,8 +1123,13 @@ func seedLegacyRecycleBinDirectory(
 	}
 }
 
-func recycleBinObjectFromActiveObject(object model.Object, deletedAt time.Time) model.RecycleBinObject {
+func recycleBinObjectFromActiveObject(
+	object model.Object,
+	deletedAt time.Time,
+	deleteGroupID string,
+) model.RecycleBinObject {
 	return model.RecycleBinObject{
+		DeleteGroupID:    deleteGroupID,
 		BucketName:       object.BucketName,
 		ObjectKey:        object.ObjectKey,
 		OriginalFilename: object.OriginalFilename,

@@ -87,7 +87,7 @@ type RecycleBinService struct {
 	bucketRepo  *repository.BucketRepository
 	objectRepo  *repository.ObjectRepository
 	recycleRepo *repository.RecycleBinRepository
-	quota       *StorageQuotaService
+	blobs       *BlobLifecycleService
 }
 
 func NewRecycleBinService(
@@ -95,14 +95,14 @@ func NewRecycleBinService(
 	bucketRepo *repository.BucketRepository,
 	objectRepo *repository.ObjectRepository,
 	recycleRepo *repository.RecycleBinRepository,
-	quota *StorageQuotaService,
+	blobLifecycle *BlobLifecycleService,
 ) *RecycleBinService {
 	return &RecycleBinService{
 		gormDB:      gormDB,
 		bucketRepo:  bucketRepo,
 		objectRepo:  objectRepo,
 		recycleRepo: recycleRepo,
-		quota:       quota,
+		blobs:       blobLifecycle,
 	}
 }
 
@@ -220,15 +220,10 @@ func (s *RecycleBinService) DeleteObjects(ctx context.Context, itemIDs []uint64)
 	result := &DeleteRecycleBinObjectsOutput{
 		FailedItems: make([]RecycleBinFailedItem, 0),
 	}
-	storagePaths := make([]string, 0, len(normalizedIDs))
-
 	for _, itemID := range normalizedIDs {
-		failedItem, paths, deleteErr := s.deleteObject(ctx, itemID)
+		failedItem, deleteErr := s.deleteObject(ctx, itemID)
 		if deleteErr == nil {
 			result.DeletedCount++
-			if len(paths) > 0 {
-				storagePaths = append(storagePaths, paths...)
-			}
 			continue
 		}
 
@@ -240,12 +235,6 @@ func (s *RecycleBinService) DeleteObjects(ctx context.Context, itemIDs []uint64)
 		failedItem.Code = appErr.Code
 		failedItem.Message = appErr.Message
 		result.FailedItems = append(result.FailedItems, failedItem)
-	}
-
-	if len(storagePaths) > 0 {
-		writeSession := s.quota.BeginWrite()
-		writeSession.CleanupUnreferencedPaths(ctx, storagePaths)
-		writeSession.Close()
 	}
 
 	result.FailedCount = len(result.FailedItems)
@@ -349,42 +338,41 @@ func (s *RecycleBinService) restoreObject(ctx context.Context, itemID uint64) (R
 	return failedItem, err
 }
 
-func (s *RecycleBinService) deleteObject(ctx context.Context, itemID uint64) (RecycleBinFailedItem, []string, error) {
+func (s *RecycleBinService) deleteObject(ctx context.Context, itemID uint64) (RecycleBinFailedItem, error) {
 	failedItem := RecycleBinFailedItem{ID: itemID}
-	storagePaths := make([]string, 0)
 
-	err := s.gormDB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	err := s.blobs.Publish(ctx, nil, func(tx *gorm.DB) ([]string, error) {
 		recycleRepo := s.recycleRepo.WithDB(tx)
 
 		item, err := recycleRepo.Find(ctx, itemID)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return apperrors.New(http.StatusNotFound, "recycle_bin_item_not_found", "recycle bin item not found")
+				return nil, apperrors.New(http.StatusNotFound, "recycle_bin_item_not_found", "recycle bin item not found")
 			}
 
-			return apperrors.Wrap(http.StatusInternalServerError, "recycle_bin_delete_failed", "failed to load recycle bin item", err)
+			return nil, apperrors.Wrap(http.StatusInternalServerError, "recycle_bin_delete_failed", "failed to load recycle bin item", err)
 		}
 
 		failedItem.BucketName = item.BucketName
 		failedItem.Path = recycleBinObjectPath(*item)
 		groupItems, err := loadRecycleBinActionItems(ctx, recycleRepo, *item)
 		if err != nil {
-			return apperrors.Wrap(http.StatusInternalServerError, "recycle_bin_delete_failed", "failed to load recycle bin item group", err)
+			return nil, apperrors.Wrap(http.StatusInternalServerError, "recycle_bin_delete_failed", "failed to load recycle bin item group", err)
 		}
-		storagePaths = recycleBinObjectStoragePaths(groupItems)
+		storagePaths := recycleBinObjectStoragePaths(groupItems)
 
 		deleted, err := recycleRepo.HardDeleteByIDs(ctx, recycleBinObjectIDs(groupItems))
 		if err != nil {
-			return apperrors.Wrap(http.StatusInternalServerError, "recycle_bin_delete_failed", "failed to delete recycle bin item", err)
+			return nil, apperrors.Wrap(http.StatusInternalServerError, "recycle_bin_delete_failed", "failed to delete recycle bin item", err)
 		}
 		if deleted != int64(len(groupItems)) {
-			return apperrors.New(http.StatusNotFound, "recycle_bin_item_not_found", "recycle bin item not found")
+			return nil, apperrors.New(http.StatusNotFound, "recycle_bin_item_not_found", "recycle bin item not found")
 		}
 
-		return nil
+		return storagePaths, nil
 	})
 
-	return failedItem, storagePaths, err
+	return failedItem, err
 }
 
 func validateRecycleBinItemIDs(itemIDs []uint64) ([]uint64, error) {
@@ -500,6 +488,25 @@ func recycleBinLogicalItemsFromRawItems(items []model.RecycleBinObject) []recycl
 
 func recycleBinLogicalItemsFromDeletedAtBatch(items []model.RecycleBinObject) []recycleBinLogicalItem {
 	logicalItems := make([]recycleBinLogicalItem, 0, len(items))
+	itemsByDeleteGroupID := make(map[string][]model.RecycleBinObject)
+	deleteGroupIDs := make([]string, 0)
+
+	for _, item := range items {
+		if _, exists := itemsByDeleteGroupID[item.DeleteGroupID]; !exists {
+			deleteGroupIDs = append(deleteGroupIDs, item.DeleteGroupID)
+		}
+		itemsByDeleteGroupID[item.DeleteGroupID] = append(itemsByDeleteGroupID[item.DeleteGroupID], item)
+	}
+
+	for _, deleteGroupID := range deleteGroupIDs {
+		logicalItems = append(logicalItems, recycleBinLogicalItemsFromDeleteGroup(itemsByDeleteGroupID[deleteGroupID])...)
+	}
+
+	return logicalItems
+}
+
+func recycleBinLogicalItemsFromDeleteGroup(items []model.RecycleBinObject) []recycleBinLogicalItem {
+	logicalItems := make([]recycleBinLogicalItem, 0, len(items))
 	directoryMarkers := make(map[recycleBinDirectoryKey]model.RecycleBinObject)
 	logicalItemIndexByDirectory := make(map[recycleBinDirectoryKey]int)
 
@@ -598,12 +605,7 @@ func loadRecycleBinActionItems(
 		return []model.RecycleBinObject{item}, nil
 	}
 
-	return recycleRepo.ListDirectoryGroup(
-		ctx,
-		item.BucketName,
-		item.DeletedAt,
-		recycleBinObjectPath(item),
-	)
+	return recycleRepo.ListByDeleteGroupID(ctx, item.DeleteGroupID)
 }
 
 func shouldSkipRecycleBinRestoreItem(item model.RecycleBinObject) bool {

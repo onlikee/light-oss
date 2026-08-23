@@ -112,6 +112,35 @@ func TestDirectorySize(t *testing.T) {
 	}
 }
 
+func TestDirectorySizeProbeCanCountCalls(t *testing.T) {
+	root := t.TempDir()
+	if err := os.WriteFile(filepath.Join(root, "object.bin"), []byte("1234"), 0o644); err != nil {
+		t.Fatalf("write object file: %v", err)
+	}
+
+	originalDirectorySize := directorySize
+	t.Cleanup(func() {
+		directorySize = originalDirectorySize
+	})
+
+	callCount := 0
+	directorySize = func(root string) (uint64, error) {
+		callCount++
+		return calculateDirectorySize(root)
+	}
+
+	size, err := directorySize(root)
+	if err != nil {
+		t.Fatalf("directory size: %v", err)
+	}
+	if size != 4 {
+		t.Fatalf("expected usage to be 4, got %d", size)
+	}
+	if callCount != 1 {
+		t.Fatalf("expected directory size probe to count 1 call, got %d", callCount)
+	}
+}
+
 type partitionLike struct {
 	Device     string
 	Mountpoint string

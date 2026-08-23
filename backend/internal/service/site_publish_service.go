@@ -11,7 +11,6 @@ import (
 	"light-oss/backend/internal/model"
 	apperrors "light-oss/backend/internal/pkg/errors"
 	"light-oss/backend/internal/repository"
-	"light-oss/backend/internal/storage"
 )
 
 type PublishSiteUploadInput struct {
@@ -34,25 +33,22 @@ type SitePublishService struct {
 	gormDB      *gorm.DB
 	objectRepo  *repository.ObjectRepository
 	siteRepo    *repository.SiteRepository
-	storage     *storage.LocalStorage
 	siteService *SiteService
-	quota       *StorageQuotaService
+	blobs       *BlobLifecycleService
 }
 
 func NewSitePublishService(
 	gormDB *gorm.DB,
 	objectRepo *repository.ObjectRepository,
 	siteRepo *repository.SiteRepository,
-	localStorage *storage.LocalStorage,
-	quotaService *StorageQuotaService,
+	blobLifecycle *BlobLifecycleService,
 	siteService *SiteService,
 ) *SitePublishService {
 	return &SitePublishService{
 		gormDB:      gormDB,
 		objectRepo:  objectRepo,
 		siteRepo:    siteRepo,
-		storage:     localStorage,
-		quota:       quotaService,
+		blobs:       blobLifecycle,
 		siteService: siteService,
 	}
 }
@@ -63,6 +59,9 @@ func (s *SitePublishService) Publish(
 ) (*PublishSiteUploadOutput, error) {
 	if len(input.Items) == 0 {
 		return nil, apperrors.New(http.StatusBadRequest, "invalid_batch_manifest", "manifest must contain at least one file")
+	}
+	if len(input.Items) > maxBatchUploadItems {
+		return nil, apperrors.New(http.StatusBadRequest, "invalid_batch_manifest", "manifest must contain at most 2000 files")
 	}
 	if len(input.Domains) == 0 {
 		return nil, apperrors.New(http.StatusBadRequest, "invalid_request", "domains is required")
@@ -91,99 +90,68 @@ func (s *SitePublishService) Publish(
 		return nil, err
 	}
 
-	storedPaths := make([]string, 0, len(input.Items))
-	uploadedCount := 0
-	var createdSite *model.Site
+	preparedItems := make([]preparedBatchUploadItem, 0, len(input.Items))
 	objectKeys := make([]string, 0, len(input.Items))
+	seenObjectKeys := make(map[string]struct{}, len(input.Items))
 	for _, item := range input.Items {
-		objectKeys = append(objectKeys, parentPrefix+item.RelativePath)
+		if err := ValidateUploadRelativePath(item.RelativePath); err != nil {
+			return nil, invalidBatchManifestError(err)
+		}
+		objectKey := parentPrefix + item.RelativePath
+		if err := ValidateUserObjectKey(objectKey); err != nil {
+			return nil, invalidBatchManifestError(err)
+		}
+		if _, exists := seenObjectKeys[objectKey]; exists {
+			return nil, apperrors.New(http.StatusBadRequest, "invalid_batch_manifest", "manifest contains duplicate object keys")
+		}
+		seenObjectKeys[objectKey] = struct{}{}
+		objectKeys = append(objectKeys, objectKey)
+		preparedItems = append(preparedItems, preparedBatchUploadItem{Item: item, ObjectKey: objectKey})
 	}
 
-	existingObjectsByKey, err := s.siteService.objectService.loadActiveObjectsByKeys(ctx, input.BucketName, objectKeys)
+	stagedBlobs, err := stageBatchUploadItems(ctx, s.blobs, preparedItems)
 	if err != nil {
-		return nil, apperrors.Wrap(http.StatusInternalServerError, "object_lookup_failed", "failed to look up objects", err)
+		return nil, err
 	}
-	replacedPaths := make([]string, 0, len(existingObjectsByKey))
 
-	writeSession := s.quota.BeginWrite()
-	defer writeSession.Close()
+	objectsToSave := make([]model.Object, 0, len(preparedItems))
+	for index, prepared := range preparedItems {
+		staged := stagedBlobs[index]
+		objectsToSave = append(objectsToSave, model.Object{
+			BucketName:       input.BucketName,
+			ObjectKey:        prepared.ObjectKey,
+			OriginalFilename: SanitizeOriginalFilename(prepared.Item.OriginalFilename),
+			StoragePath:      staged.StoragePath,
+			Size:             int64(staged.Size),
+			ContentType:      NormalizeContentType(prepared.Item.ContentType),
+			ETag:             staged.ETag,
+			Visibility:       model.VisibilityPublic,
+			IsDeleted:        false,
+		})
+	}
 
-	err = s.gormDB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	var createdSite *model.Site
+	err = s.blobs.Publish(ctx, stagedBlobs, func(tx *gorm.DB) ([]string, error) {
 		objectRepo := s.objectRepo.WithDB(tx)
 		siteRepo := s.siteRepo.WithDB(tx)
-		seenObjectKeys := make(map[string]struct{}, len(input.Items))
-
-		for _, item := range input.Items {
-			if err := ValidateUploadRelativePath(item.RelativePath); err != nil {
-				return invalidBatchManifestError(err)
+		existingObjects, err := findActiveObjectsInBatches(ctx, objectRepo, input.BucketName, objectKeys, true)
+		if err != nil {
+			return nil, apperrors.Wrap(http.StatusInternalServerError, "object_lookup_failed", "failed to look up objects", err)
+		}
+		if err := objectRepo.UpsertBatch(ctx, objectsToSave, metadataWriteBatchSize); err != nil {
+			if isForeignKeyError(err) {
+				return nil, apperrors.New(http.StatusNotFound, "bucket_not_found", "bucket not found")
 			}
-
-			objectKey := parentPrefix + item.RelativePath
-			if err := ValidateUserObjectKey(objectKey); err != nil {
-				return invalidBatchManifestError(err)
-			}
-			if _, exists := seenObjectKeys[objectKey]; exists {
-				return apperrors.New(http.StatusBadRequest, "invalid_batch_manifest", "manifest contains duplicate object keys")
-			}
-			seenObjectKeys[objectKey] = struct{}{}
-
-			reader, err := item.Open()
-			if err != nil {
-				return apperrors.Wrap(http.StatusInternalServerError, "batch_file_open_failed", "failed to open uploaded file", err)
-			}
-
-			stored, err := writeSession.Save(ctx, reader)
-			closeErr := reader.Close()
-			if err != nil {
-				if appErr := apperrors.From(err); appErr.Code != "internal_error" {
-					return err
-				}
-
-				return apperrors.Wrap(http.StatusInternalServerError, "object_store_failed", "failed to store object", err)
-			}
-			if closeErr != nil {
-				writeSession.DeletePaths([]string{stored.RelativePath})
-				return apperrors.Wrap(http.StatusInternalServerError, "batch_file_open_failed", "failed to close uploaded file", closeErr)
-			}
-
-			storedPaths = append(storedPaths, stored.RelativePath)
-
-			object := &model.Object{
-				BucketName:       input.BucketName,
-				ObjectKey:        objectKey,
-				OriginalFilename: SanitizeOriginalFilename(item.OriginalFilename),
-				StoragePath:      stored.RelativePath,
-				Size:             stored.Size,
-				ContentType:      NormalizeContentType(item.ContentType),
-				ETag:             stored.ETag,
-				Visibility:       model.VisibilityPublic,
-				IsDeleted:        false,
-			}
-
-			if _, err := objectRepo.Upsert(ctx, object); err != nil {
-				if isForeignKeyError(err) {
-					return apperrors.New(http.StatusNotFound, "bucket_not_found", "bucket not found")
-				}
-
-				return apperrors.Wrap(http.StatusInternalServerError, "object_metadata_failed", "failed to save object metadata", err)
-			}
-
-			uploadedCount++
-			if existingObject, exists := existingObjectsByKey[objectKey]; exists {
-				replacedPaths = append(replacedPaths, existingObject.StoragePath)
-			}
+			return nil, apperrors.Wrap(http.StatusInternalServerError, "object_metadata_failed", "failed to save object metadata", err)
 		}
 
 		createdSite, err = siteRepo.Create(ctx, site, domains)
 		if err != nil {
-			return err
+			return nil, err
 		}
-
-		return nil
+		return storagePathsFromObjects(existingObjects), nil
 	})
 	if err != nil {
-		writeSession.DeletePaths(storedPaths)
-
 		if errors.Is(err, gorm.ErrDuplicatedKey) || isDuplicateError(err) {
 			return nil, apperrors.New(http.StatusConflict, "domain_conflict", "domain is already bound to another site")
 		}
@@ -198,10 +166,8 @@ func (s *SitePublishService) Publish(
 		return nil, apperrors.Wrap(http.StatusInternalServerError, "site_create_failed", "failed to create site", err)
 	}
 
-	writeSession.CleanupUnreferencedPaths(ctx, replacedPaths)
-
 	return &PublishSiteUploadOutput{
-		UploadedCount: uploadedCount,
+		UploadedCount: len(objectsToSave),
 		Site:          createdSite,
 	}, nil
 }

@@ -3,6 +3,7 @@ package handler_test
 import (
 	"archive/zip"
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -204,6 +205,38 @@ func TestCORSAllowsAllOrigins(t *testing.T) {
 	}
 }
 
+func TestCORSHeadersRemainVisibleOnGlobalRateLimit(t *testing.T) {
+	router := newTestRouterWithConfig(t, 1024, func(cfg *config.Config) {
+		cfg.RateLimitIPRPS = 0.000001
+		cfg.RateLimitIPBurst = 1
+	})
+
+	firstReq := httptest.NewRequest(http.MethodGet, "/api/missing", nil)
+	firstReq.Header.Set("Origin", "http://console.example.com")
+	firstRec := httptest.NewRecorder()
+	router.ServeHTTP(firstRec, firstReq)
+	if firstRec.Code != http.StatusNotFound {
+		t.Fatalf("expected first request to reach the not-found handler, got %d", firstRec.Code)
+	}
+
+	limitedReq := httptest.NewRequest(http.MethodGet, "/api/missing", nil)
+	limitedReq.Header.Set("Origin", "http://console.example.com")
+	limitedRec := httptest.NewRecorder()
+	router.ServeHTTP(limitedRec, limitedReq)
+	if limitedRec.Code != http.StatusTooManyRequests {
+		t.Fatalf("expected 429, got %d", limitedRec.Code)
+	}
+	if got := limitedRec.Header().Get("Access-Control-Allow-Origin"); got != "*" {
+		t.Fatalf("expected wildcard allow origin on rate limit response, got %q", got)
+	}
+
+	var body apiEnvelope[any]
+	decodeJSON(t, limitedRec.Body.Bytes(), &body)
+	if body.Error == nil || body.Error.Code != "rate_limited" {
+		t.Fatalf("expected rate_limited error, got %+v", body.Error)
+	}
+}
+
 func TestListBucketsSupportsSearch(t *testing.T) {
 	router := newTestRouter(t, 1024)
 
@@ -286,6 +319,156 @@ func TestProtectedHealthzRequiresAuthAndReturnsHealthState(t *testing.T) {
 	}
 	if status["db"] != "ok" {
 		t.Fatalf("expected db ok, got %+v", status["db"])
+	}
+}
+
+func TestLivenessDoesNotDependOnDatabase(t *testing.T) {
+	router, _, gormDB := newTestRouterWithStorageRootAndDB(t, 1024)
+	sqlDB, err := gormDB.DB()
+	if err != nil {
+		t.Fatalf("sql db: %v", err)
+	}
+	if err := sqlDB.Close(); err != nil {
+		t.Fatalf("close sql db: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/livez", nil)
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d, body=%s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestLivenessDoesNotDependOnSharedRateLimitStore(t *testing.T) {
+	router, _, _ := newTestRouterWithStorageRootAndDBConfigAndRateLimitStore(
+		t,
+		1024,
+		func(cfg *config.Config) {
+			cfg.RateLimitBackend = config.RateLimitBackendMySQL
+		},
+		failingRateLimitStore{},
+	)
+
+	livenessReq := httptest.NewRequest(http.MethodGet, "/livez", nil)
+	livenessRec := httptest.NewRecorder()
+	router.ServeHTTP(livenessRec, livenessReq)
+	if livenessRec.Code != http.StatusOK {
+		t.Fatalf("expected liveness 200, got %d, body=%s", livenessRec.Code, livenessRec.Body.String())
+	}
+
+	readinessReq := httptest.NewRequest(http.MethodGet, "/readyz", nil)
+	readinessRec := httptest.NewRecorder()
+	router.ServeHTTP(readinessRec, readinessReq)
+	if readinessRec.Code != http.StatusServiceUnavailable {
+		t.Fatalf("expected readiness 503, got %d, body=%s", readinessRec.Code, readinessRec.Body.String())
+	}
+	assertAPIErrorCode(t, readinessRec.Body.Bytes(), "rate_limit_unavailable")
+}
+
+func TestPublicHealthProbesDoNotUseGlobalIPRateLimit(t *testing.T) {
+	router, _, _ := newTestRouterWithStorageRootAndDBConfigAndRateLimitStore(
+		t,
+		1024,
+		func(cfg *config.Config) {
+			cfg.RateLimitBackend = config.RateLimitBackendMySQL
+		},
+		healthOnlyRateLimitStore{},
+	)
+
+	for _, path := range []string{"/readyz", "/healthz"} {
+		req := httptest.NewRequest(http.MethodGet, path, nil)
+		rec := httptest.NewRecorder()
+		router.ServeHTTP(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("%s expected 200, got %d, body=%s", path, rec.Code, rec.Body.String())
+		}
+	}
+
+	protectedReq := httptest.NewRequest(http.MethodGet, "/api/v1/healthz", nil)
+	protectedReq.Header.Set("Authorization", "Bearer dev-token")
+	protectedRec := httptest.NewRecorder()
+	router.ServeHTTP(protectedRec, protectedReq)
+	if protectedRec.Code != http.StatusServiceUnavailable {
+		t.Fatalf("expected protected route to use global IP limiter and return 503, got %d, body=%s", protectedRec.Code, protectedRec.Body.String())
+	}
+	assertAPIErrorCode(t, protectedRec.Body.Bytes(), "rate_limit_unavailable")
+}
+
+func TestReadinessReturnsUnavailableWhenDependencyCheckFails(t *testing.T) {
+	router, _, gormDB := newTestRouterWithStorageRootAndDB(t, 1024)
+	sqlDB, err := gormDB.DB()
+	if err != nil {
+		t.Fatalf("sql db: %v", err)
+	}
+	if err := sqlDB.Close(); err != nil {
+		t.Fatalf("close sql db: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/readyz", nil)
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Fatalf("expected 503, got %d, body=%s", rec.Code, rec.Body.String())
+	}
+	assertAPIErrorCode(t, rec.Body.Bytes(), "not_ready")
+}
+
+func TestSystemMetricsRequiresAuthAndReportsRuntimeState(t *testing.T) {
+	router := newTestRouter(t, 1024)
+
+	unauthorizedReq := httptest.NewRequest(http.MethodGet, "/api/v1/system/metrics", nil)
+	unauthorizedRec := httptest.NewRecorder()
+	router.ServeHTTP(unauthorizedRec, unauthorizedReq)
+	if unauthorizedRec.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401, got %d", unauthorizedRec.Code)
+	}
+
+	authorizedReq := httptest.NewRequest(http.MethodGet, "/api/v1/system/metrics", nil)
+	authorizedReq.Header.Set("Authorization", "Bearer dev-token")
+	authorizedRec := httptest.NewRecorder()
+	router.ServeHTTP(authorizedRec, authorizedReq)
+	if authorizedRec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d, body=%s", authorizedRec.Code, authorizedRec.Body.String())
+	}
+
+	var body apiEnvelope[map[string]any]
+	decodeJSON(t, authorizedRec.Body.Bytes(), &body)
+	for _, section := range []string{"uploads", "transactions", "cleanup", "quota", "database", "rate_limit"} {
+		if _, ok := body.Data[section]; !ok {
+			t.Fatalf("expected metrics section %q, got %+v", section, body.Data)
+		}
+	}
+}
+
+func TestHealthzReturnsUnavailableWhenDatabasePingFails(t *testing.T) {
+	router, _, gormDB := newTestRouterWithStorageRootAndDB(t, 1024)
+	sqlDB, err := gormDB.DB()
+	if err != nil {
+		t.Fatalf("sql db: %v", err)
+	}
+	if err := sqlDB.Close(); err != nil {
+		t.Fatalf("close sql db: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Fatalf("expected 503, got %d, body=%s", rec.Code, rec.Body.String())
+	}
+
+	var body apiEnvelope[map[string]any]
+	decodeJSON(t, rec.Body.Bytes(), &body)
+	status, ok := body.Data["status"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected status object, got %+v", body.Data["status"])
+	}
+	if status["db"] != "error" {
+		t.Fatalf("expected db error, got %+v", status["db"])
 	}
 }
 
@@ -2939,12 +3122,34 @@ func newTestRouter(t *testing.T, maxUploadSize int64) *gin.Engine {
 	return router
 }
 
+func newTestRouterWithConfig(t *testing.T, maxUploadSize int64, configure func(*config.Config)) *gin.Engine {
+	router, _, _ := newTestRouterWithStorageRootAndDBConfig(t, maxUploadSize, configure)
+	return router
+}
+
 func newTestRouterWithStorageRoot(t *testing.T, maxUploadSize int64) (*gin.Engine, string) {
 	router, root, _ := newTestRouterWithStorageRootAndDB(t, maxUploadSize)
 	return router, root
 }
 
 func newTestRouterWithStorageRootAndDB(t *testing.T, maxUploadSize int64) (*gin.Engine, string, *gorm.DB) {
+	return newTestRouterWithStorageRootAndDBConfig(t, maxUploadSize, nil)
+}
+
+func newTestRouterWithStorageRootAndDBConfig(
+	t *testing.T,
+	maxUploadSize int64,
+	configure func(*config.Config),
+) (*gin.Engine, string, *gorm.DB) {
+	return newTestRouterWithStorageRootAndDBConfigAndRateLimitStore(t, maxUploadSize, configure, nil)
+}
+
+func newTestRouterWithStorageRootAndDBConfigAndRateLimitStore(
+	t *testing.T,
+	maxUploadSize int64,
+	configure func(*config.Config),
+	rateLimitStore middleware.RateLimitStore,
+) (*gin.Engine, string, *gorm.DB) {
 	t.Helper()
 	gin.SetMode(gin.TestMode)
 
@@ -2957,7 +3162,16 @@ func newTestRouterWithStorageRootAndDB(t *testing.T, maxUploadSize int64) (*gin.
 		t.Fatalf("enable sqlite foreign keys: %v", err)
 	}
 
-	if err := db.AutoMigrate(&model.Bucket{}, &model.SystemStorageQuota{}, &model.Object{}, &model.RecycleBinObject{}, &model.Site{}, &model.SiteDomain{}); err != nil {
+	if err := db.AutoMigrate(
+		&model.Bucket{},
+		&model.SystemStorageQuota{},
+		&model.Object{},
+		&model.RecycleBinObject{},
+		&model.Site{},
+		&model.SiteDomain{},
+		&model.StorageBlob{},
+		&model.StorageCleanupJob{},
+	); err != nil {
 		t.Fatalf("migrate sqlite: %v", err)
 	}
 
@@ -2973,12 +3187,27 @@ func newTestRouterWithStorageRootAndDB(t *testing.T, maxUploadSize int64) (*gin.
 		StorageRoot:                filepath.ToSlash(root),
 		MaxUploadSizeBytes:         maxUploadSize,
 		MaxMultipartMemoryBytes:    8 * 1024 * 1024,
+		RateLimitIPRPS:             1000,
+		RateLimitIPBurst:           1000,
 		RateLimitRPS:               1000,
 		RateLimitBurst:             1000,
+		RateLimitPublicRPS:         1000,
+		RateLimitPublicBurst:       1000,
+		RateLimitUploadRPS:         1000,
+		RateLimitUploadBurst:       1000,
+		RateLimitSignRPS:           1000,
+		RateLimitSignBurst:         1000,
+		RateLimitHealthRPS:         1000,
+		RateLimitHealthBurst:       1000,
+		RateLimitCacheTTLSeconds:   3600,
+		RateLimitCacheMaxEntries:   10000,
 		BearerTokens:               []string{"dev-token"},
 		SigningSecret:              "test-secret",
 		DefaultSignedURLTTLSeconds: 300,
 		MaxSignedURLTTLSeconds:     86400,
+	}
+	if configure != nil {
+		configure(&cfg)
 	}
 
 	bucketRepo := repository.NewBucketRepository(db)
@@ -2987,25 +3216,49 @@ func newTestRouterWithStorageRootAndDB(t *testing.T, maxUploadSize int64) (*gin.
 	siteRepo := repository.NewSiteRepository(db)
 	localStorage := storage.NewLocalStorage(root)
 	storageQuotaRepo := repository.NewStorageQuotaRepository(db)
-	storageQuotaService := service.NewStorageQuotaService(zap.NewNop(), root, localStorage, objectRepo, recycleRepo, storageQuotaRepo)
-	objectService := service.NewObjectService(db, bucketRepo, objectRepo, recycleRepo, localStorage, storageQuotaService)
-	recycleBinService := service.NewRecycleBinService(db, bucketRepo, objectRepo, recycleRepo, storageQuotaService)
+	if _, err := storageQuotaRepo.EnsureDefault(context.Background(), 10*1024*1024*1024); err != nil {
+		t.Fatalf("initialize storage quota: %v", err)
+	}
+	storageBlobRepo := repository.NewStorageBlobRepository(db)
+	blobLifecycle := service.NewBlobLifecycleService(zap.NewNop(), db, localStorage, storageBlobRepo, 1024*1024)
+	cleanupWorker := service.NewStorageCleanupWorker(zap.NewNop(), localStorage, storageBlobRepo, time.Hour)
+	blobLifecycle.SetCleanupRunOnce(func(ctx context.Context) error {
+		return cleanupWorker.RunOnce(ctx, time.Now().UTC())
+	})
+	storageQuotaService := service.NewStorageQuotaService(root, storageQuotaRepo)
+	objectService := service.NewObjectService(db, bucketRepo, objectRepo, recycleRepo, localStorage, blobLifecycle)
+	recycleBinService := service.NewRecycleBinService(db, bucketRepo, objectRepo, recycleRepo, blobLifecycle)
 	siteService := service.NewSiteService(bucketRepo, siteRepo, objectService)
 	return handler.NewRouter(handler.Dependencies{
 		Config:              cfg,
 		Logger:              zap.NewNop(),
 		DB:                  sqlDB,
-		GormDB:              db,
 		AuthValidator:       middleware.NewTokenValidator(cfg.BearerTokens),
-		BucketService:       service.NewBucketService(zap.NewNop(), db, bucketRepo, objectRepo, recycleRepo, siteRepo, storageQuotaService),
+		RateLimitStore:      rateLimitStore,
+		BucketService:       service.NewBucketService(bucketRepo, objectRepo, recycleRepo, siteRepo, blobLifecycle),
 		ObjectService:       objectService,
 		RecycleBinService:   recycleBinService,
 		SiteService:         siteService,
-		SitePublishService:  service.NewSitePublishService(db, objectRepo, siteRepo, localStorage, storageQuotaService, siteService),
+		SitePublishService:  service.NewSitePublishService(db, objectRepo, siteRepo, blobLifecycle, siteService),
 		SignService:         service.NewSignService(signing.NewSigner(cfg.SigningSecret), cfg.DefaultSignedURLTTLSeconds, cfg.MaxSignedURLTTLSeconds),
 		SystemStatsService:  service.NewSystemStatsService(zap.NewNop(), storageQuotaService),
 		StorageQuotaService: storageQuotaService,
 	}), root, db
+}
+
+type failingRateLimitStore struct{}
+
+func (failingRateLimitStore) Allow(context.Context, string, float64, int, time.Duration) (bool, error) {
+	return false, fmt.Errorf("rate limit store unavailable")
+}
+
+type healthOnlyRateLimitStore struct{}
+
+func (healthOnlyRateLimitStore) Allow(_ context.Context, key string, _ float64, _ int, _ time.Duration) (bool, error) {
+	if strings.HasPrefix(key, "health:") {
+		return true, nil
+	}
+	return false, fmt.Errorf("unexpected non-health rate limit namespace %q", key)
 }
 
 func createBucket(t *testing.T, router *gin.Engine, name string) {

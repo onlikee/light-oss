@@ -12,12 +12,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 
 	"light-oss/backend/internal/model"
 	apperrors "light-oss/backend/internal/pkg/errors"
 	"light-oss/backend/internal/repository"
-	"light-oss/backend/internal/storage"
 )
 
 const (
@@ -52,8 +52,8 @@ type ObjectService struct {
 	bucketRepo  *repository.BucketRepository
 	objectRepo  *repository.ObjectRepository
 	recycleRepo *repository.RecycleBinRepository
-	storage     *storage.LocalStorage
-	quota       *StorageQuotaService
+	storage     BlobReader
+	blobs       *BlobLifecycleService
 }
 
 func NewObjectService(
@@ -61,16 +61,16 @@ func NewObjectService(
 	bucketRepo *repository.BucketRepository,
 	objectRepo *repository.ObjectRepository,
 	recycleRepo *repository.RecycleBinRepository,
-	localStorage *storage.LocalStorage,
-	quotaService *StorageQuotaService,
+	blobStore BlobReader,
+	blobLifecycle *BlobLifecycleService,
 ) *ObjectService {
 	return &ObjectService{
 		gormDB:      gormDB,
 		bucketRepo:  bucketRepo,
 		objectRepo:  objectRepo,
 		recycleRepo: recycleRepo,
-		storage:     localStorage,
-		quota:       quotaService,
+		storage:     blobStore,
+		blobs:       blobLifecycle,
 	}
 }
 
@@ -91,7 +91,6 @@ func (s *ObjectService) Upload(ctx context.Context, input UploadObjectInput) (*m
 		return nil, err
 	}
 
-	var existing *model.Object
 	if !input.AllowOverwrite {
 		exists, err := s.objectRepo.ExistsActive(ctx, input.BucketName, input.ObjectKey)
 		if err != nil {
@@ -100,49 +99,53 @@ func (s *ObjectService) Upload(ctx context.Context, input UploadObjectInput) (*m
 		if exists {
 			return nil, apperrors.New(http.StatusConflict, "object_exists", "object already exists; set X-Allow-Overwrite=true to overwrite")
 		}
-	} else {
-		existing, err = s.findActiveObject(ctx, input.BucketName, input.ObjectKey)
-		if err != nil {
-			return nil, apperrors.Wrap(http.StatusInternalServerError, "object_lookup_failed", "failed to look up object", err)
-		}
 	}
 
-	writeSession := s.quota.BeginWrite()
-	defer writeSession.Close()
-
-	stored, err := writeSession.Save(ctx, input.Body)
+	staged, err := s.blobs.Stage(ctx, input.Body)
 	if err != nil {
-		if appErr := apperrors.From(err); appErr.Code != "internal_error" {
-			return nil, err
-		}
-
-		return nil, apperrors.Wrap(http.StatusInternalServerError, "object_store_failed", "failed to store object", err)
+		return nil, stagedBlobStoreError(err)
 	}
 
 	object := &model.Object{
 		BucketName:       input.BucketName,
 		ObjectKey:        input.ObjectKey,
 		OriginalFilename: SanitizeOriginalFilename(input.OriginalFilename),
-		StoragePath:      stored.RelativePath,
-		Size:             stored.Size,
+		StoragePath:      staged.StoragePath,
+		Size:             int64(staged.Size),
 		ContentType:      NormalizeContentType(input.ContentType),
-		ETag:             stored.ETag,
+		ETag:             staged.ETag,
 		Visibility:       visibility,
 		IsDeleted:        false,
 	}
 
-	saved, err := s.objectRepo.Upsert(ctx, object)
-	if err != nil {
-		writeSession.DeletePaths([]string{stored.RelativePath})
-		if isForeignKeyError(err) {
-			return nil, apperrors.New(http.StatusNotFound, "bucket_not_found", "bucket not found")
+	var saved *model.Object
+	err = s.blobs.Publish(ctx, []*StagedBlob{staged}, func(tx *gorm.DB) ([]string, error) {
+		objectRepo := s.objectRepo.WithDB(tx)
+		releasedPaths := make([]string, 0, 1)
+		if input.AllowOverwrite {
+			existing, findErr := objectRepo.FindActiveForUpdate(ctx, input.BucketName, input.ObjectKey)
+			if findErr == nil {
+				releasedPaths = append(releasedPaths, existing.StoragePath)
+			} else if !errors.Is(findErr, gorm.ErrRecordNotFound) {
+				return nil, apperrors.Wrap(http.StatusInternalServerError, "object_lookup_failed", "failed to look up object", findErr)
+			}
+			saved, err = objectRepo.Upsert(ctx, object)
+		} else {
+			saved, err = objectRepo.Create(ctx, object)
 		}
-
-		return nil, apperrors.Wrap(http.StatusInternalServerError, "object_metadata_failed", "failed to save object metadata", err)
-	}
-
-	if existing != nil {
-		writeSession.CleanupUnreferencedPaths(ctx, []string{existing.StoragePath})
+		if err != nil {
+			if !input.AllowOverwrite && (errors.Is(err, gorm.ErrDuplicatedKey) || isDuplicateError(err)) {
+				return nil, apperrors.New(http.StatusConflict, "object_exists", "object already exists; set X-Allow-Overwrite=true to overwrite")
+			}
+			if isForeignKeyError(err) {
+				return nil, apperrors.New(http.StatusNotFound, "bucket_not_found", "bucket not found")
+			}
+			return nil, apperrors.Wrap(http.StatusInternalServerError, "object_metadata_failed", "failed to save object metadata", err)
+		}
+		return releasedPaths, nil
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return saved, nil
@@ -237,14 +240,11 @@ func (s *ObjectService) Delete(ctx context.Context, bucketName string, objectKey
 		return err
 	}
 
-	writeSession := s.quota.BeginWrite()
-	defer writeSession.Close()
-
 	err := s.gormDB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		objectRepo := s.objectRepo.WithDB(tx)
 		recycleRepo := s.recycleRepo.WithDB(tx)
 
-		object, err := objectRepo.FindActive(ctx, bucketName, objectKey)
+		object, err := objectRepo.FindActiveForUpdate(ctx, bucketName, objectKey)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return gorm.ErrRecordNotFound
@@ -253,11 +253,13 @@ func (s *ObjectService) Delete(ctx context.Context, bucketName string, objectKey
 			return apperrors.Wrap(http.StatusInternalServerError, "object_lookup_failed", "failed to look up object", err)
 		}
 
-		if err := recycleRepo.CreateBatch(ctx, recycleBinObjectsFromObjects([]model.Object{*object}, time.Now().UTC())); err != nil {
+		deletedAt := time.Now().UTC()
+		deleteGroupID := newRecycleBinDeleteGroupID()
+		if err := recycleRepo.CreateBatch(ctx, recycleBinObjectsFromObjects([]model.Object{*object}, deletedAt, deleteGroupID)); err != nil {
 			return apperrors.Wrap(http.StatusInternalServerError, "object_delete_failed", "failed to move object to recycle bin", err)
 		}
 
-		deleted, err := objectRepo.HardDelete(ctx, bucketName, objectKey)
+		deleted, err := objectRepo.HardDeleteByID(ctx, object.ID)
 		if err != nil {
 			return apperrors.Wrap(http.StatusInternalServerError, "object_delete_failed", "failed to delete object", err)
 		}
@@ -442,10 +444,23 @@ func storagePathsFromObjects(objects []model.Object) []string {
 	return paths
 }
 
-func recycleBinObjectsFromObjects(objects []model.Object, deletedAt time.Time) []model.RecycleBinObject {
+func objectIDs(objects []model.Object) []uint64 {
+	ids := make([]uint64, 0, len(objects))
+	for _, object := range objects {
+		ids = append(ids, object.ID)
+	}
+
+	return ids
+}
+
+func recycleBinObjectsFromObjects(
+	objects []model.Object,
+	deletedAt time.Time,
+	deleteGroupID string,
+) []model.RecycleBinObject {
 	items := make([]model.RecycleBinObject, 0, len(objects))
 	for _, object := range objects {
-		items = append(items, recycleBinObjectFromObject(object, deletedAt))
+		items = append(items, recycleBinObjectFromObject(object, deletedAt, deleteGroupID))
 	}
 
 	return items
@@ -455,6 +470,7 @@ func recycleBinObjectsFromFolderDelete(
 	objects []model.Object,
 	folderPath string,
 	deletedAt time.Time,
+	deleteGroupID string,
 ) []model.RecycleBinObject {
 	if len(objects) == 0 {
 		return nil
@@ -471,20 +487,21 @@ func recycleBinObjectsFromFolderDelete(
 			continue
 		}
 
-		items = append(items, recycleBinObjectFromObject(object, deletedAt))
+		items = append(items, recycleBinObjectFromObject(object, deletedAt, deleteGroupID))
 	}
 
 	if representative != nil {
-		items = append(items, recycleBinObjectFromObject(*representative, deletedAt))
+		items = append(items, recycleBinObjectFromObject(*representative, deletedAt, deleteGroupID))
 		return items
 	}
 
-	items = append(items, syntheticRecycleBinDirectoryObject(objects[0].BucketName, folderPath, deletedAt))
+	items = append(items, syntheticRecycleBinDirectoryObject(objects[0].BucketName, folderPath, deletedAt, deleteGroupID))
 	return items
 }
 
-func recycleBinObjectFromObject(object model.Object, deletedAt time.Time) model.RecycleBinObject {
+func recycleBinObjectFromObject(object model.Object, deletedAt time.Time, deleteGroupID string) model.RecycleBinObject {
 	return model.RecycleBinObject{
+		DeleteGroupID:    deleteGroupID,
 		BucketName:       object.BucketName,
 		ObjectKey:        object.ObjectKey,
 		OriginalFilename: object.OriginalFilename,
@@ -503,8 +520,10 @@ func syntheticRecycleBinDirectoryObject(
 	bucketName string,
 	folderPath string,
 	deletedAt time.Time,
+	deleteGroupID string,
 ) model.RecycleBinObject {
 	return model.RecycleBinObject{
+		DeleteGroupID:    deleteGroupID,
 		BucketName:       bucketName,
 		ObjectKey:        folderPath + folderMarkerFilename,
 		OriginalFilename: folderMarkerFilename,
@@ -517,4 +536,8 @@ func syntheticRecycleBinDirectoryObject(
 		CreatedAt:        deletedAt,
 		DeletedAt:        deletedAt,
 	}
+}
+
+func newRecycleBinDeleteGroupID() string {
+	return uuid.NewString()
 }

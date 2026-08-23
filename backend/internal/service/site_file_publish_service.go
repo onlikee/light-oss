@@ -68,58 +68,51 @@ func (s *SitePublishService) PublishFile(
 		_ = reader.Close()
 	}()
 
-	existingObject, err := s.siteService.objectService.findActiveObject(ctx, input.BucketName, parentPrefix+fileName)
+	staged, err := s.blobs.Stage(ctx, reader)
 	if err != nil {
-		return nil, apperrors.Wrap(http.StatusInternalServerError, "object_lookup_failed", "failed to look up object", err)
-	}
-
-	writeSession := s.quota.BeginWrite()
-	defer writeSession.Close()
-
-	stored, err := writeSession.Save(ctx, reader)
-	if err != nil {
-		if appErr := apperrors.From(err); appErr.Code != "internal_error" {
-			return nil, err
-		}
-
-		return nil, apperrors.Wrap(http.StatusInternalServerError, "object_store_failed", "failed to store object", err)
+		return nil, stagedBlobStoreError(err)
 	}
 
 	object := &model.Object{
 		BucketName:       input.BucketName,
 		ObjectKey:        parentPrefix + fileName,
 		OriginalFilename: SanitizeOriginalFilename(input.Filename),
-		StoragePath:      stored.RelativePath,
-		Size:             stored.Size,
+		StoragePath:      staged.StoragePath,
+		Size:             int64(staged.Size),
 		ContentType:      NormalizeContentType(input.ContentType),
-		ETag:             stored.ETag,
+		ETag:             staged.ETag,
 		Visibility:       model.VisibilityPublic,
 		IsDeleted:        false,
 	}
 
 	var createdSite *model.Site
-	err = s.gormDB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	err = s.blobs.Publish(ctx, []*StagedBlob{staged}, func(tx *gorm.DB) ([]string, error) {
 		objectRepo := s.objectRepo.WithDB(tx)
 		siteRepo := s.siteRepo.WithDB(tx)
+		releasedPaths := make([]string, 0, 1)
+		existingObject, findErr := objectRepo.FindActiveForUpdate(ctx, input.BucketName, object.ObjectKey)
+		if findErr == nil {
+			releasedPaths = append(releasedPaths, existingObject.StoragePath)
+		} else if !errors.Is(findErr, gorm.ErrRecordNotFound) {
+			return nil, apperrors.Wrap(http.StatusInternalServerError, "object_lookup_failed", "failed to look up object", findErr)
+		}
 
 		if _, err := objectRepo.Upsert(ctx, object); err != nil {
 			if isForeignKeyError(err) {
-				return apperrors.New(http.StatusNotFound, "bucket_not_found", "bucket not found")
+				return nil, apperrors.New(http.StatusNotFound, "bucket_not_found", "bucket not found")
 			}
 
-			return apperrors.Wrap(http.StatusInternalServerError, "object_metadata_failed", "failed to save object metadata", err)
+			return nil, apperrors.Wrap(http.StatusInternalServerError, "object_metadata_failed", "failed to save object metadata", err)
 		}
 
 		createdSite, err = siteRepo.Create(ctx, site, domains)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
-		return nil
+		return releasedPaths, nil
 	})
 	if err != nil {
-		writeSession.DeletePaths([]string{stored.RelativePath})
-
 		if errors.Is(err, gorm.ErrDuplicatedKey) || isDuplicateError(err) {
 			return nil, apperrors.New(http.StatusConflict, "domain_conflict", "domain is already bound to another site")
 		}
@@ -132,10 +125,6 @@ func (s *SitePublishService) PublishFile(
 		}
 
 		return nil, apperrors.Wrap(http.StatusInternalServerError, "site_create_failed", "failed to create site", err)
-	}
-
-	if existingObject != nil {
-		writeSession.CleanupUnreferencedPaths(ctx, []string{existingObject.StoragePath})
 	}
 
 	return createdSite, nil

@@ -3,7 +3,7 @@
   "info": {
     "title": "Light OSS API",
     "version": "1.0.0",
-    "description": "供 APIFOX 导入的 OpenAPI 3.0 JSON。路由覆盖范围来自 backend/internal/handler/router.go，不包含 /api/v1 与 /healthz 之外的站点内容路由。"
+    "description": "供 APIFOX 导入的 OpenAPI 3.0 JSON。文档中的路径与 HTTP 方法集合与后端实际注册的 Gin 路由保持一致。"
   },
   "servers": [
     {
@@ -25,13 +25,69 @@
       "name": "对象"
     },
     {
+      "name": "回收站"
+    },
+    {
       "name": "站点"
+    },
+    {
+      "name": "系统"
     },
     {
       "name": "签名"
     }
   ],
   "paths": {
+    "/livez": {
+      "get": {
+        "tags": ["健康检查"],
+        "operationId": "getLiveness",
+        "summary": "存活探针",
+        "description": "轻量、无需认证的进程存活探针。成功响应包含状态 `ok` 和服务版本。",
+        "responses": {
+          "200": {
+            "description": "后端进程存活。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/readyz": {
+      "get": {
+        "tags": ["健康检查"],
+        "operationId": "getReadiness",
+        "summary": "就绪探针",
+        "description": "无需认证的就绪探针。运行时检查覆盖数据库、migration 状态、当前配置的 BlobStore 和已对账的存储配额状态。",
+        "responses": {
+          "200": {
+            "description": "后端已就绪。成功响应包含状态 `ready` 和服务版本。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "就绪依赖检查失败。错误代码：not_ready。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/healthz": {
       "get": {
         "tags": ["健康检查"],
@@ -58,6 +114,151 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/sites/{siteID}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/SiteIDParam"
+        }
+      ],
+      "get": {
+        "tags": ["站点"],
+        "operationId": "downloadSiteRoot",
+        "summary": "读取站点根文档",
+        "description": "公开返回站点配置的索引文档。站点或对象查找失败时返回仅含状态码的网站响应。",
+        "responses": {
+          "200": {
+            "description": "站点内容。",
+            "headers": {
+              "Content-Type": {
+                "$ref": "#/components/headers/ContentTypeHeader"
+              },
+              "Content-Length": {
+                "$ref": "#/components/headers/ContentLengthHeader"
+              },
+              "ETag": {
+                "$ref": "#/components/headers/ETagHeader"
+              }
+            },
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "站点标识无效。无响应体。"
+          },
+          "404": {
+            "description": "站点或请求的内容不存在。若已配置错误文档，可能使用此状态码返回文档内容。"
+          }
+        }
+      },
+      "head": {
+        "tags": ["站点"],
+        "operationId": "headSiteRoot",
+        "summary": "检查站点根文档",
+        "description": "返回与 GET 相同的状态和表示头，但不返回响应体。",
+        "responses": {
+          "200": {
+            "description": "站点内容元数据。",
+            "headers": {
+              "Content-Type": {
+                "$ref": "#/components/headers/ContentTypeHeader"
+              },
+              "Content-Length": {
+                "$ref": "#/components/headers/ContentLengthHeader"
+              },
+              "ETag": {
+                "$ref": "#/components/headers/ETagHeader"
+              }
+            }
+          },
+          "400": {
+            "description": "站点标识无效。无响应体。"
+          },
+          "404": {
+            "description": "站点或请求的内容不存在。无响应体。"
+          }
+        }
+      }
+    },
+    "/sites/{siteID}/{path}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/SiteIDParam"
+        },
+        {
+          "$ref": "#/components/parameters/SitePathParam"
+        }
+      ],
+      "get": {
+        "tags": ["站点"],
+        "operationId": "downloadSitePath",
+        "summary": "读取站点路径",
+        "description": "公开返回站点根前缀下的文件。目录形式路径会解析到已配置的索引文档；SPA 回退和错误文档行为遵循站点配置。",
+        "responses": {
+          "200": {
+            "description": "站点内容。",
+            "headers": {
+              "Content-Type": {
+                "$ref": "#/components/headers/ContentTypeHeader"
+              },
+              "Content-Length": {
+                "$ref": "#/components/headers/ContentLengthHeader"
+              },
+              "ETag": {
+                "$ref": "#/components/headers/ETagHeader"
+              }
+            },
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "站点标识或内容路径无效。无响应体。"
+          },
+          "404": {
+            "description": "站点或请求的内容不存在。若已配置回退或错误文档，可能使用此状态码返回文档内容。"
+          }
+        }
+      },
+      "head": {
+        "tags": ["站点"],
+        "operationId": "headSitePath",
+        "summary": "检查站点路径",
+        "description": "返回与 GET 相同的状态和表示头，但不返回响应体。",
+        "responses": {
+          "200": {
+            "description": "站点内容元数据。",
+            "headers": {
+              "Content-Type": {
+                "$ref": "#/components/headers/ContentTypeHeader"
+              },
+              "Content-Length": {
+                "$ref": "#/components/headers/ContentLengthHeader"
+              },
+              "ETag": {
+                "$ref": "#/components/headers/ETagHeader"
+              }
+            }
+          },
+          "400": {
+            "description": "站点标识或内容路径无效。无响应体。"
+          },
+          "404": {
+            "description": "站点或请求的内容不存在。无响应体。"
           }
         }
       }
@@ -100,6 +301,159 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HealthzEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/system/metrics": {
+      "get": {
+        "tags": ["系统"],
+        "operationId": "getSystemMetrics",
+        "summary": "读取运行时指标",
+        "description": "返回当前进程累计的上传、事务、清理、配额、数据库连接池以及各级限流器计数。",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "当前运行时指标快照。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bearer Token 缺失或无效。错误代码：unauthorized。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/system/stats": {
+      "get": {
+        "tags": ["系统"],
+        "operationId": "getSystemStats",
+        "summary": "读取主机与存储统计",
+        "description": "返回主机操作系统、CPU、内存、磁盘以及逻辑存储配额使用情况。",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "当前系统统计。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bearer Token 缺失或无效。错误代码：unauthorized。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "无法采集系统或存储统计。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/system/storage/quota": {
+      "put": {
+        "tags": ["系统"],
+        "operationId": "updateSystemStorageQuota",
+        "summary": "更新逻辑存储配额",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["max_bytes"],
+                "properties": {
+                  "max_bytes": {
+                    "type": "integer",
+                    "format": "int64",
+                    "minimum": 1,
+                    "description": "新的逻辑存储用量上限，单位为字节。"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "更新后的存储配额快照。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求体或 max_bytes 无效。错误代码：invalid_request。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bearer Token 缺失或无效。错误代码：unauthorized。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "无法更新存储配额。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
             }
@@ -217,6 +571,69 @@
           },
           "500": {
             "description": "创建存储桶失败。错误代码： bucket_create_failed。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buckets/{bucket}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/BucketParam"
+        }
+      ],
+      "delete": {
+        "tags": ["存储桶"],
+        "operationId": "deleteBucket",
+        "summary": "删除存储桶",
+        "description": "删除存储桶及其所有对象、文件夹标记、关联站点和绑定域名。元数据删除成功后执行存储文件清理。",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "存储桶已删除。无响应体。"
+          },
+          "400": {
+            "description": "存储桶名称无效。错误代码：invalid_bucket_name。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bearer Token 缺失或无效。错误代码：unauthorized。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "存储桶不存在。错误代码：bucket_not_found。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "删除存储桶失败。错误代码：bucket_lookup_failed、bucket_delete_failed。",
             "content": {
               "application/json": {
                 "schema": {
@@ -594,6 +1011,100 @@
         }
       }
     },
+    "/api/v1/buckets/{bucket}/entries/batch-delete": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/BucketParam"
+        }
+      ],
+      "post": {
+        "tags": ["对象"],
+        "operationId": "deleteExplorerEntriesBatch",
+        "summary": "批量删除资源管理器条目",
+        "description": "一次最多删除 200 个文件或目录。目录会递归删除，单项失败会返回在成功响应结果中。",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["items"],
+                "properties": {
+                  "items": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 200,
+                    "items": {
+                      "type": "object",
+                      "required": ["type", "path"],
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": ["file", "directory"]
+                        },
+                        "path": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 512,
+                          "description": "文件使用对象键；目录使用以 '/' 结尾的规范化文件夹路径。"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "包含 deleted_count、failed_count 和 failed_items 的批量处理结果。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "存储桶名称、请求体、条目数量、类型或路径无效。错误代码：invalid_request、invalid_bucket_name。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bearer Token 缺失或无效。错误代码：unauthorized。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "存储桶不存在。错误代码：bucket_not_found。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buckets/{bucket}/objects": {
       "parameters": [
         {
@@ -675,7 +1186,7 @@
         "tags": ["对象"],
         "operationId": "uploadObjectBatch",
         "summary": "使用 multipart/form-data 批量上传文件",
-        "description": "`manifest` 是 JSON 字符串数组。每个项目都声明 `file_field` 与 `relative_path`。其他文件分段必须使用 `manifest[].file_field` 中引用的精确字段名。",
+        "description": "`manifest` 是在 multipart 字段中编码的 JSON 数组。每个项目都声明 `file_field` 与 `relative_path`。其他文件分段必须使用 `manifest[].file_field` 中引用的精确字段名。",
         "security": [
           {
             "bearerAuth": []
@@ -1182,6 +1693,188 @@
         }
       }
     },
+    "/api/v1/recycle-bin/objects": {
+      "get": {
+        "tags": ["回收站"],
+        "operationId": "listRecycleBinObjects",
+        "summary": "列出回收站条目",
+        "description": "使用游标分页列出回收站中的逻辑文件和目录条目。",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "bucket",
+            "in": "query",
+            "required": false,
+            "description": "可选的存储桶名称筛选。",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/ObjectListLimitQuery"
+          },
+          {
+            "$ref": "#/components/parameters/CursorQuery"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "回收站条目和 next_cursor。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "存储桶筛选或游标无效。错误代码：invalid_bucket_name、invalid_cursor。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bearer Token 缺失或无效。错误代码：unauthorized。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "无法列出回收站条目。错误代码：recycle_bin_list_failed。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/recycle-bin/objects/restore": {
+      "post": {
+        "tags": ["回收站"],
+        "operationId": "restoreRecycleBinObjects",
+        "summary": "恢复回收站条目",
+        "description": "一次最多恢复 200 个逻辑回收站条目。重复 ID 只处理一次，单项失败会返回在成功响应结果中。",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecycleBinBatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "包含 restored_count、failed_count 和 failed_items 的批量处理结果。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求体或 item_ids 列表无效。错误代码：invalid_request。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bearer Token 缺失或无效。错误代码：unauthorized。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/recycle-bin/objects/batch-delete": {
+      "post": {
+        "tags": ["回收站"],
+        "operationId": "deleteRecycleBinObjects",
+        "summary": "永久删除回收站条目",
+        "description": "一次最多永久删除 200 个逻辑回收站条目。重复 ID 只处理一次，单项失败会返回在成功响应结果中。",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecycleBinBatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "包含 deleted_count、failed_count 和 failed_items 的批量处理结果。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求体或 item_ids 列表无效。错误代码：invalid_request。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bearer Token 缺失或无效。错误代码：unauthorized。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/sites": {
       "get": {
         "tags": ["站点"],
@@ -1393,6 +2086,120 @@
           },
           "500": {
             "description": "站点发布失败。错误代码：bucket_lookup_failed、batch_file_buffer_failed、batch_file_open_failed、object_store_failed、object_metadata_failed、site_create_failed。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sites/publish/object": {
+      "post": {
+        "tags": ["站点"],
+        "operationId": "publishObjectSite",
+        "summary": "将已有对象发布为站点",
+        "description": "将已有对象设为公开，并创建根前缀和索引文档由该对象键推导的站点。",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["bucket", "object_key", "domains"],
+                "properties": {
+                  "bucket": {
+                    "type": "string"
+                  },
+                  "object_key": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 512
+                  },
+                  "enabled": {
+                    "type": "boolean",
+                    "default": true
+                  },
+                  "error_document": {
+                    "type": "string"
+                  },
+                  "spa_fallback": {
+                    "type": "boolean",
+                    "default": true
+                  },
+                  "domains": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "已有对象已发布为站点。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求体、存储桶、对象键、域名或网站配置无效。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bearer Token 缺失或无效。错误代码：unauthorized。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "存储桶或源对象不存在。错误代码：bucket_not_found、object_not_found。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "域名已绑定到其他站点。错误代码：domain_conflict。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "对象可见性更新或站点创建失败。",
             "content": {
               "application/json": {
                 "schema": {
@@ -1800,11 +2607,25 @@
         "name": "siteID",
         "in": "path",
         "required": true,
-        "description": "正网站标识符。",
+        "description": "正整数站点标识。",
         "schema": {
           "type": "integer",
           "format": "int64",
           "minimum": 1
+        }
+      },
+      "SitePathParam": {
+        "name": "path",
+        "in": "path",
+        "required": true,
+        "allowReserved": true,
+        "style": "simple",
+        "explode": false,
+        "description": "站点相对内容路径。该占位符表示 Gin 的 /*path 通配符，可包含 '/'。传入不带开头斜杠的原始路径。",
+        "schema": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
         }
       },
       "PrefixQuery": {
@@ -1986,6 +2807,23 @@
       }
     },
     "schemas": {
+      "RecycleBinBatchRequest": {
+        "type": "object",
+        "required": ["item_ids"],
+        "properties": {
+          "item_ids": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 200,
+            "description": "正整数回收站条目标识。后端接受重复值，但只处理一次。",
+            "items": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 1
+            }
+          }
+        }
+      },
       "SuccessEnvelope": {
         "type": "object",
         "required": ["request_id", "data"],
@@ -2315,9 +3153,22 @@
             "description": "可见性应用于每个上传的对象。省略时默认为private。"
           },
           "manifest": {
-            "type": "string",
-            "description": "UploadBatchManifestItem 对象的 JSON 字符串数组。",
-            "example": "[{\"file_field\":\"file_0\",\"relative_path\":\"index.html\"},{\"file_field\":\"file_1\",\"relative_path\":\"assets/app.js\"}]"
+            "type": "array",
+            "maxItems": 2000,
+            "items": {
+              "$ref": "#/components/schemas/UploadBatchManifestItem"
+            },
+            "description": "在 multipart 字段中编码的 UploadBatchManifestItem 对象 JSON 数组。",
+            "example": [
+              {
+                "file_field": "file_0",
+                "relative_path": "index.html"
+              },
+              {
+                "file_field": "file_1",
+                "relative_path": "assets/app.js"
+              }
+            ]
           }
         },
         "additionalProperties": {
@@ -2479,9 +3330,22 @@
             "default": "true"
           },
           "manifest": {
-            "type": "string",
-            "description": "UploadBatchManifestItem 对象的 JSON 字符串数组。所有 relative_path 必须共享同一个最外层目录名。",
-            "example": "[{\"file_field\":\"file_0\",\"relative_path\":\"dist/index.html\"},{\"file_field\":\"file_1\",\"relative_path\":\"dist/assets/app.js\"}]"
+            "type": "array",
+            "maxItems": 2000,
+            "items": {
+              "$ref": "#/components/schemas/UploadBatchManifestItem"
+            },
+            "description": "在 multipart 字段中编码的 UploadBatchManifestItem 对象 JSON 数组。所有 relative_path 必须共享同一个最外层目录名。",
+            "example": [
+              {
+                "file_field": "file_0",
+                "relative_path": "dist/index.html"
+              },
+              {
+                "file_field": "file_1",
+                "relative_path": "dist/assets/app.js"
+              }
+            ]
           }
         },
         "additionalProperties": {

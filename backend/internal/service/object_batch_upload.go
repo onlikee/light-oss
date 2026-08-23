@@ -2,19 +2,28 @@ package service
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
 	"strings"
+
+	"gorm.io/gorm"
 
 	"light-oss/backend/internal/model"
 	apperrors "light-oss/backend/internal/pkg/errors"
 	"light-oss/backend/internal/repository"
 )
 
+const (
+	maxBatchUploadItems    = 2000
+	metadataWriteBatchSize = 100
+)
+
 type UploadObjectBatchItemInput struct {
 	RelativePath     string
 	OriginalFilename string
 	ContentType      string
+	Size             *uint64
 	Open             func() (io.ReadCloser, error)
 }
 
@@ -43,6 +52,9 @@ func (s *ObjectService) UploadBatch(
 	}
 	if len(input.Items) == 0 {
 		return nil, apperrors.New(http.StatusBadRequest, "invalid_batch_manifest", "manifest must contain at least one file")
+	}
+	if len(input.Items) > maxBatchUploadItems {
+		return nil, apperrors.New(http.StatusBadRequest, "invalid_batch_manifest", "manifest must contain at most 2000 files")
 	}
 
 	visibility, err := ParseVisibility(input.Visibility)
@@ -90,82 +102,166 @@ func (s *ObjectService) UploadBatch(
 		}
 	}
 
-	existingObjectsByKey, err := s.loadActiveObjectsByKeys(ctx, input.BucketName, collectPreparedObjectKeys(preparedItems))
+	stagedBlobs, err := stageBatchUploadItems(ctx, s.blobs, preparedItems)
 	if err != nil {
-		return nil, apperrors.Wrap(http.StatusInternalServerError, "object_lookup_failed", "failed to look up objects", err)
-	}
-
-	uploadedItems := make([]model.Object, 0, len(input.Items))
-	storedPaths := make([]string, 0, len(input.Items))
-	replacedPaths := make([]string, 0, len(existingObjectsByKey))
-
-	writeSession := s.quota.BeginWrite()
-	defer writeSession.Close()
-
-	err = s.objectRepo.Transaction(ctx, func(repo *repository.ObjectRepository) error {
-		for _, prepared := range preparedItems {
-			reader, err := prepared.Item.Open()
-			if err != nil {
-				return apperrors.Wrap(http.StatusInternalServerError, "batch_file_open_failed", "failed to open uploaded file", err)
-			}
-
-			stored, err := writeSession.Save(ctx, reader)
-			closeErr := reader.Close()
-			if err != nil {
-				if appErr := apperrors.From(err); appErr.Code != "internal_error" {
-					return err
-				}
-
-				return apperrors.Wrap(http.StatusInternalServerError, "object_store_failed", "failed to store object", err)
-			}
-			if closeErr != nil {
-				writeSession.DeletePaths([]string{stored.RelativePath})
-				return apperrors.Wrap(http.StatusInternalServerError, "batch_file_open_failed", "failed to close uploaded file", closeErr)
-			}
-
-			storedPaths = append(storedPaths, stored.RelativePath)
-
-			object := &model.Object{
-				BucketName:       input.BucketName,
-				ObjectKey:        prepared.ObjectKey,
-				OriginalFilename: SanitizeOriginalFilename(prepared.Item.OriginalFilename),
-				StoragePath:      stored.RelativePath,
-				Size:             stored.Size,
-				ContentType:      NormalizeContentType(prepared.Item.ContentType),
-				ETag:             stored.ETag,
-				Visibility:       visibility,
-				IsDeleted:        false,
-			}
-
-			saved, err := repo.Upsert(ctx, object)
-			if err != nil {
-				if isForeignKeyError(err) {
-					return apperrors.New(http.StatusNotFound, "bucket_not_found", "bucket not found")
-				}
-
-				return apperrors.Wrap(http.StatusInternalServerError, "object_metadata_failed", "failed to save object metadata", err)
-			}
-
-			uploadedItems = append(uploadedItems, *saved)
-			if existingObject, exists := existingObjectsByKey[prepared.ObjectKey]; exists {
-				replacedPaths = append(replacedPaths, existingObject.StoragePath)
-			}
-		}
-
-		return nil
-	})
-	if err != nil {
-		writeSession.DeletePaths(storedPaths)
-
 		return nil, err
 	}
 
-	writeSession.CleanupUnreferencedPaths(ctx, replacedPaths)
+	objectsToSave := make([]model.Object, 0, len(preparedItems))
+	for index, prepared := range preparedItems {
+		staged := stagedBlobs[index]
+		objectsToSave = append(objectsToSave, model.Object{
+			BucketName:       input.BucketName,
+			ObjectKey:        prepared.ObjectKey,
+			OriginalFilename: SanitizeOriginalFilename(prepared.Item.OriginalFilename),
+			StoragePath:      staged.StoragePath,
+			Size:             int64(staged.Size),
+			ContentType:      NormalizeContentType(prepared.Item.ContentType),
+			ETag:             staged.ETag,
+			Visibility:       visibility,
+			IsDeleted:        false,
+		})
+	}
+
+	objectKeys := collectPreparedObjectKeys(preparedItems)
+	uploadedItems := make([]model.Object, 0, len(objectsToSave))
+	err = s.blobs.Publish(ctx, stagedBlobs, func(tx *gorm.DB) ([]string, error) {
+		repo := s.objectRepo.WithDB(tx)
+		existingObjects, err := findActiveObjectsInBatches(ctx, repo, input.BucketName, objectKeys, true)
+		if err != nil {
+			return nil, apperrors.Wrap(http.StatusInternalServerError, "object_lookup_failed", "failed to look up objects", err)
+		}
+		if !input.AllowOverwrite && len(existingObjects) > 0 {
+			return nil, apperrors.New(http.StatusConflict, "object_exists", "one or more objects already exist; set X-Allow-Overwrite=true to overwrite")
+		}
+
+		if input.AllowOverwrite {
+			err = repo.UpsertBatch(ctx, objectsToSave, metadataWriteBatchSize)
+		} else {
+			err = repo.CreateBatch(ctx, objectsToSave, metadataWriteBatchSize)
+		}
+		if err != nil {
+			if !input.AllowOverwrite && (errors.Is(err, gorm.ErrDuplicatedKey) || isDuplicateError(err)) {
+				return nil, apperrors.New(http.StatusConflict, "object_exists", "one or more objects already exist; set X-Allow-Overwrite=true to overwrite")
+			}
+			if isForeignKeyError(err) {
+				return nil, apperrors.New(http.StatusNotFound, "bucket_not_found", "bucket not found")
+			}
+			return nil, apperrors.Wrap(http.StatusInternalServerError, "object_metadata_failed", "failed to save object metadata", err)
+		}
+
+		uploadedItems, err = findActiveObjectsInBatches(ctx, repo, input.BucketName, objectKeys, false)
+		if err != nil {
+			return nil, apperrors.Wrap(http.StatusInternalServerError, "object_lookup_failed", "failed to load uploaded objects", err)
+		}
+		uploadedItems = orderObjectsByKeys(uploadedItems, objectKeys)
+		if len(uploadedItems) != len(objectKeys) {
+			return nil, apperrors.New(http.StatusInternalServerError, "object_metadata_failed", "failed to load all uploaded objects")
+		}
+		return storagePathsFromObjects(existingObjects), nil
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	return &UploadObjectBatchOutput{
 		UploadedCount: len(uploadedItems),
 		Items:         uploadedItems,
 	}, nil
+}
+
+func stageBatchUploadItems(
+	ctx context.Context,
+	blobs *BlobLifecycleService,
+	items []preparedBatchUploadItem,
+) ([]*StagedBlob, error) {
+	knownInputs := make([]BlobBatchInput, 0, len(items))
+	allSizesKnown := true
+	for _, item := range items {
+		if item.Item.Size == nil {
+			allSizesKnown = false
+			break
+		}
+		knownInputs = append(knownInputs, BlobBatchInput{
+			Size: *item.Item.Size,
+			Open: item.Item.Open,
+		})
+	}
+	if allSizesKnown {
+		staged, err := blobs.StageKnownBatch(ctx, knownInputs)
+		if err != nil {
+			var readerErr *batchBlobReaderError
+			if errors.As(err, &readerErr) {
+				return nil, apperrors.Wrap(http.StatusInternalServerError, "batch_file_open_failed", "failed to "+readerErr.operation+" uploaded file", readerErr.err)
+			}
+			return nil, stagedBlobStoreError(err)
+		}
+		return staged, nil
+	}
+
+	stagedBlobs := make([]*StagedBlob, 0, len(items))
+	for _, item := range items {
+		reader, openErr := item.Item.Open()
+		if openErr != nil {
+			blobs.Abort(ctx, stagedBlobs...)
+			return nil, apperrors.Wrap(http.StatusInternalServerError, "batch_file_open_failed", "failed to open uploaded file", openErr)
+		}
+
+		staged, stageErr := blobs.Stage(ctx, reader)
+		closeErr := reader.Close()
+		if stageErr != nil {
+			blobs.Abort(ctx, stagedBlobs...)
+			return nil, stagedBlobStoreError(stageErr)
+		}
+		if closeErr != nil {
+			blobs.Abort(ctx, append(stagedBlobs, staged)...)
+			return nil, apperrors.Wrap(http.StatusInternalServerError, "batch_file_open_failed", "failed to close uploaded file", closeErr)
+		}
+
+		stagedBlobs = append(stagedBlobs, staged)
+	}
+
+	return stagedBlobs, nil
+}
+
+func findActiveObjectsInBatches(
+	ctx context.Context,
+	repo *repository.ObjectRepository,
+	bucketName string,
+	objectKeys []string,
+	forUpdate bool,
+) ([]model.Object, error) {
+	objects := make([]model.Object, 0, len(objectKeys))
+	for start := 0; start < len(objectKeys); start += metadataWriteBatchSize {
+		end := min(start+metadataWriteBatchSize, len(objectKeys))
+		var batch []model.Object
+		var err error
+		if forUpdate {
+			batch, err = repo.FindActiveByKeysForUpdate(ctx, bucketName, objectKeys[start:end])
+		} else {
+			batch, err = repo.FindActiveByKeys(ctx, bucketName, objectKeys[start:end])
+		}
+		if err != nil {
+			return nil, err
+		}
+		objects = append(objects, batch...)
+	}
+	return objects, nil
+}
+
+func orderObjectsByKeys(objects []model.Object, keys []string) []model.Object {
+	byKey := make(map[string]model.Object, len(objects))
+	for _, object := range objects {
+		byKey[object.ObjectKey] = object
+	}
+
+	ordered := make([]model.Object, 0, len(keys))
+	for _, key := range keys {
+		if object, exists := byKey[key]; exists {
+			ordered = append(ordered, object)
+		}
+	}
+	return ordered
 }
 
 type preparedBatchUploadItem struct {

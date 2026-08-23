@@ -203,7 +203,16 @@ func newTestSiteServices(t *testing.T) (*repository.BucketRepository, *ObjectSer
 	if err := db.Exec("PRAGMA foreign_keys = ON").Error; err != nil {
 		t.Fatalf("enable sqlite foreign keys: %v", err)
 	}
-	if err := db.AutoMigrate(&model.Bucket{}, &model.SystemStorageQuota{}, &model.Object{}, &model.RecycleBinObject{}, &model.Site{}, &model.SiteDomain{}); err != nil {
+	if err := db.AutoMigrate(
+		&model.Bucket{},
+		&model.SystemStorageQuota{},
+		&model.Object{},
+		&model.RecycleBinObject{},
+		&model.Site{},
+		&model.SiteDomain{},
+		&model.StorageBlob{},
+		&model.StorageCleanupJob{},
+	); err != nil {
 		t.Fatalf("migrate sqlite: %v", err)
 	}
 
@@ -214,8 +223,12 @@ func newTestSiteServices(t *testing.T) (*repository.BucketRepository, *ObjectSer
 	siteRepo := repository.NewSiteRepository(db)
 	localStorage := storage.NewLocalStorage(root)
 	storageQuotaRepo := repository.NewStorageQuotaRepository(db)
-	storageQuotaService := NewStorageQuotaService(zap.NewNop(), root, localStorage, objectRepo, recycleRepo, storageQuotaRepo)
-	objectService := NewObjectService(db, bucketRepo, objectRepo, recycleRepo, localStorage, storageQuotaService)
+	if _, err := storageQuotaRepo.EnsureDefault(context.Background(), 10*1024*1024*1024); err != nil {
+		t.Fatalf("initialize storage quota: %v", err)
+	}
+	storageBlobRepo := repository.NewStorageBlobRepository(db)
+	blobLifecycle := NewBlobLifecycleService(zap.NewNop(), db, localStorage, storageBlobRepo, 1024*1024)
+	objectService := NewObjectService(db, bucketRepo, objectRepo, recycleRepo, localStorage, blobLifecycle)
 	siteService := NewSiteService(bucketRepo, siteRepo, objectService)
 	return bucketRepo, objectService, siteService
 }
