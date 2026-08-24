@@ -126,7 +126,6 @@ func (s *SitePublishService) Publish(
 			ContentType:      NormalizeContentType(prepared.Item.ContentType),
 			ETag:             staged.ETag,
 			Visibility:       model.VisibilityPublic,
-			IsDeleted:        false,
 		})
 	}
 

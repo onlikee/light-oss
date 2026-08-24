@@ -119,7 +119,6 @@ func (s *ObjectService) UploadBatch(
 			ContentType:      NormalizeContentType(prepared.Item.ContentType),
 			ETag:             staged.ETag,
 			Visibility:       visibility,
-			IsDeleted:        false,
 		})
 	}
 

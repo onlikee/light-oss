@@ -91,17 +91,16 @@ type SiteDomain struct {
 
 type Object struct {
 	ID               uint64     `gorm:"primaryKey"`
-	BucketName       string     `gorm:"size:128;not null;uniqueIndex:udx_objects_bucket_key,priority:1;index:idx_objects_bucket_created,priority:1;index:idx_objects_bucket_key,priority:1"`
-	ObjectKey        string     `gorm:"size:512;not null;uniqueIndex:udx_objects_bucket_key,priority:2;index:idx_objects_bucket_key,priority:3"`
+	BucketName       string     `gorm:"size:128;not null;uniqueIndex:udx_objects_bucket_key,priority:1;index:idx_objects_bucket_created,priority:1;index:idx_objects_bucket_key,priority:1;index:idx_objects_bucket_fingerprint,priority:1"`
+	ObjectKey        string     `gorm:"size:512;not null;uniqueIndex:udx_objects_bucket_key,priority:2;index:idx_objects_bucket_key,priority:2"`
 	OriginalFilename string     `gorm:"size:255;not null"`
 	StoragePath      string     `gorm:"size:512;not null"`
 	Size             int64      `gorm:"not null"`
 	ContentType      string     `gorm:"size:255;not null"`
 	ETag             string     `gorm:"column:etag;size:64;not null"`
-	FileFingerprint  *string    `gorm:"column:file_fingerprint;size:64;index:idx_objects_bucket_fingerprint,priority:3"`
+	FileFingerprint  *string    `gorm:"column:file_fingerprint;size:64;index:idx_objects_bucket_fingerprint,priority:2"`
 	Visibility       Visibility `gorm:"size:16;not null"`
-	IsDeleted        bool       `gorm:"not null;default:false;index:idx_objects_bucket_created,priority:2;index:idx_objects_bucket_key,priority:2;index:idx_objects_bucket_fingerprint,priority:2"`
-	CreatedAt        time.Time  `gorm:"not null;index:idx_objects_bucket_created,priority:3,sort:desc"`
+	CreatedAt        time.Time  `gorm:"not null;index:idx_objects_bucket_created,priority:2,sort:desc"`
 	UpdatedAt        time.Time  `gorm:"not null"`
 	Bucket           *Bucket    `json:"-" gorm:"foreignKey:BucketName;references:Name;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }

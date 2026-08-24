@@ -17,8 +17,8 @@ func TestLoadReadsRootEnvWhenPersonalMissing(t *testing.T) {
 			"APP_SIGNING_SECRET=root-secret",
 			"APP_RATE_LIMIT_IP_RPS=31",
 			"APP_RATE_LIMIT_IP_BURST=62",
-			"APP_RATE_LIMIT_RPS=9",
-			"APP_RATE_LIMIT_BURST=18",
+			"APP_RATE_LIMIT_MANAGEMENT_RPS=9",
+			"APP_RATE_LIMIT_MANAGEMENT_BURST=18",
 			"",
 		}, "\n"),
 	})
@@ -46,10 +46,13 @@ func TestLoadReadsRootEnvWhenPersonalMissing(t *testing.T) {
 	if cfg.RateLimitPublicRPS != cfg.RateLimitIPRPS || cfg.RateLimitPublicBurst != cfg.RateLimitIPBurst {
 		t.Fatal("expected public download defaults to inherit the IP budget")
 	}
-	if cfg.RateLimitUploadRPS != cfg.RateLimitRPS || cfg.RateLimitUploadBurst != cfg.RateLimitBurst ||
-		cfg.RateLimitSignRPS != cfg.RateLimitRPS || cfg.RateLimitSignBurst != cfg.RateLimitBurst ||
-		cfg.RateLimitHealthRPS != cfg.RateLimitRPS || cfg.RateLimitHealthBurst != cfg.RateLimitBurst {
-		t.Fatal("expected protected route defaults to inherit the legacy identity budget")
+	if cfg.RateLimitManagementRPS != 9 || cfg.RateLimitManagementBurst != 18 {
+		t.Fatal("expected management rate limit to use its explicit budget")
+	}
+	if cfg.RateLimitUploadRPS != 5 || cfg.RateLimitUploadBurst != 10 ||
+		cfg.RateLimitSignRPS != 5 || cfg.RateLimitSignBurst != 10 ||
+		cfg.RateLimitHealthRPS != 5 || cfg.RateLimitHealthBurst != 10 {
+		t.Fatal("expected protected route classes to use independent defaults")
 	}
 }
 
@@ -149,8 +152,8 @@ func TestLoadReadsRateLimitAndTrustedProxySettings(t *testing.T) {
 			"APP_RATE_LIMIT_BACKEND=mysql",
 			"APP_RATE_LIMIT_IP_RPS=25.5",
 			"APP_RATE_LIMIT_IP_BURST=50",
-			"APP_RATE_LIMIT_RPS=7.5",
-			"APP_RATE_LIMIT_BURST=15",
+			"APP_RATE_LIMIT_MANAGEMENT_RPS=7.5",
+			"APP_RATE_LIMIT_MANAGEMENT_BURST=15",
 			"APP_RATE_LIMIT_PUBLIC_RPS=30",
 			"APP_RATE_LIMIT_PUBLIC_BURST=60",
 			"APP_RATE_LIMIT_UPLOAD_RPS=3",
@@ -177,8 +180,8 @@ func TestLoadReadsRateLimitAndTrustedProxySettings(t *testing.T) {
 	if cfg.RateLimitBackend != "mysql" {
 		t.Fatalf("unexpected rate limit backend: %q", cfg.RateLimitBackend)
 	}
-	if cfg.RateLimitRPS != 7.5 || cfg.RateLimitBurst != 15 {
-		t.Fatalf("unexpected identity rate limit: rps=%v burst=%d", cfg.RateLimitRPS, cfg.RateLimitBurst)
+	if cfg.RateLimitManagementRPS != 7.5 || cfg.RateLimitManagementBurst != 15 {
+		t.Fatalf("unexpected management rate limit: rps=%v burst=%d", cfg.RateLimitManagementRPS, cfg.RateLimitManagementBurst)
 	}
 	if cfg.RateLimitPublicRPS != 30 || cfg.RateLimitPublicBurst != 60 {
 		t.Fatalf("unexpected public rate limit: rps=%v burst=%d", cfg.RateLimitPublicRPS, cfg.RateLimitPublicBurst)
@@ -197,6 +200,34 @@ func TestLoadReadsRateLimitAndTrustedProxySettings(t *testing.T) {
 	}
 	if got := strings.Join(cfg.TrustedProxies, ","); got != "10.0.0.10,192.168.0.0/24" {
 		t.Fatalf("unexpected trusted proxies: %q", got)
+	}
+}
+
+func TestLoadIgnoresRemovedRateLimitAliases(t *testing.T) {
+	resetConfigEnv(t)
+	prepareBackendWorkspace(t, map[string]string{
+		".env": strings.Join([]string{
+			"DB_DSN=test-dsn",
+			"APP_STORAGE_ROOT=./storage",
+			"APP_BEARER_TOKENS=test-token",
+			"APP_SIGNING_SECRET=test-secret",
+			"APP_RATE_LIMIT_RPS=99",
+			"APP_RATE_LIMIT_BURST=199",
+			"",
+		}, "\n"),
+	})
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+
+	if cfg.RateLimitManagementRPS != 5 || cfg.RateLimitManagementBurst != 10 {
+		t.Fatalf(
+			"removed aliases changed management defaults: rps=%v burst=%d",
+			cfg.RateLimitManagementRPS,
+			cfg.RateLimitManagementBurst,
+		)
 	}
 }
 
@@ -359,8 +390,8 @@ func resetConfigEnv(t *testing.T) {
 		"APP_RATE_LIMIT_BACKEND",
 		"APP_RATE_LIMIT_IP_RPS",
 		"APP_RATE_LIMIT_IP_BURST",
-		"APP_RATE_LIMIT_RPS",
-		"APP_RATE_LIMIT_BURST",
+		"APP_RATE_LIMIT_MANAGEMENT_RPS",
+		"APP_RATE_LIMIT_MANAGEMENT_BURST",
 		"APP_RATE_LIMIT_PUBLIC_RPS",
 		"APP_RATE_LIMIT_PUBLIC_BURST",
 		"APP_RATE_LIMIT_UPLOAD_RPS",

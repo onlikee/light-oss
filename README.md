@@ -185,8 +185,8 @@ Custom site domains must point to the gateway through DNS or hosts. The gateway 
 - `DB_CONNECT_TIMEOUT_SECONDS`, `DB_READ_TIMEOUT_SECONDS`, and `DB_WRITE_TIMEOUT_SECONDS` enforce finite MySQL network waits (defaults: 5/300/30 seconds), including an upper bound on an uncertain transaction commit response.
 - `APP_BEARER_TOKENS` is the Bearer Token allowlist. Multiple tokens are comma-separated.
 - `APP_RATE_LIMIT_BACKEND` defaults to `local`. Set it to `mysql` to coordinate every IP and authenticated route bucket through the shared `rate_limit_buckets` table; all replicas must use identical rate and burst settings. A database decision error fails closed with HTTP 503 instead of bypassing the limit.
-- Rate limiting has two levels: `APP_RATE_LIMIT_IP_RPS` / `APP_RATE_LIMIT_IP_BURST` apply a coarse client-IP budget before authentication, while `APP_RATE_LIMIT_RPS` / `APP_RATE_LIMIT_BURST` are the authenticated management API budget.
-- Public object/site downloads, uploads, signed-link creation, and health checks use independent budgets. Override them with `APP_RATE_LIMIT_PUBLIC_*`, `APP_RATE_LIMIT_UPLOAD_*`, `APP_RATE_LIMIT_SIGN_*`, and `APP_RATE_LIMIT_HEALTH_*`; when omitted, they inherit the IP or management budget shown above.
+- Rate limiting has two levels: `APP_RATE_LIMIT_IP_RPS` / `APP_RATE_LIMIT_IP_BURST` apply a coarse client-IP budget before authentication, while `APP_RATE_LIMIT_MANAGEMENT_RPS` / `APP_RATE_LIMIT_MANAGEMENT_BURST` are the authenticated management API budget.
+- Public object/site downloads, uploads, signed-link creation, and health checks use independent budgets. Override them with `APP_RATE_LIMIT_PUBLIC_*`, `APP_RATE_LIMIT_UPLOAD_*`, `APP_RATE_LIMIT_SIGN_*`, and `APP_RATE_LIMIT_HEALTH_*`; each route class has its own explicit default.
 - `APP_RATE_LIMIT_CACHE_TTL_SECONDS` controls local-cache eviction and shared MySQL bucket expiry; `APP_RATE_LIMIT_CACHE_MAX_ENTRIES` is a hard cap for both the local cache and shared MySQL buckets. At shared capacity, a new key receives 429 while existing keys retain their buckets; expired rows release capacity. `APP_TRUSTED_PROXIES` is a comma-separated allowlist of exact gateway IP addresses or CIDRs; leave it empty to ignore forwarded client-IP headers, and never use an all-address range.
 - `shared-filesystem` is covered by a two-instance test against one MySQL database and shared root, including cross-instance upload/read/overwrite/cleanup and lease/staging takeover. The MySQL limiter is also covered by a two-Router concurrency test that proves one shared burst. The backend must remain at `replicas: 1` when `APP_STORAGE_MODE=local` or `APP_RATE_LIMIT_BACKEND=local`; horizontal scaling requires both shared modes and validation against the actual shared volume described in the runbook.
 - Do not commit real production passwords, signing secrets, tokens, or domain configuration.
@@ -196,15 +196,18 @@ Custom site domains must point to the gateway through DNS or hosts. The gateway 
 - OpenAPI document: `backend/docs/openapi.apifox.json`
 - Upload performance smoke baseline: `backend/docs/upload-performance-baseline.zh-CN.md`
 - Blob ledger, reconciliation, and migration runbook: `backend/docs/storage-lifecycle-operations.zh-CN.md`
-- Legacy multipart-upload table isolation note: `backend/docs/legacy-upload-session-tables.zh-CN.md`
+- Legacy schema retirement note: `backend/docs/legacy-upload-session-tables.zh-CN.md`
+- Backend code organization: `backend/docs/code-organization.zh-CN.md`
 - Main authenticated API prefix: `/api/v1`
-- Liveness: `GET /livez`; readiness: `GET /readyz`; compatibility health check: `GET /healthz`
+- Liveness: `GET /livez`; readiness: `GET /readyz`
 - Authenticated health check: `GET /api/v1/healthz`
 - Authenticated runtime metrics: `GET /api/v1/system/metrics`
 - Object API path keys are full object paths, so nested `/` segments act as directory-like prefixes.
 - Static sites only serve `public` objects.
 - Successful JSON responses usually use `{"request_id":"...","data":...}`.
 - Failed JSON responses usually use `{"request_id":"...","error":{"code":"...","message":"..."}}`.
+
+Upgrade note: the old public `GET /healthz` alias and `APP_RATE_LIMIT_RPS` / `APP_RATE_LIMIT_BURST` variables have been removed. Use `/livez`, `/readyz`, and `APP_RATE_LIMIT_MANAGEMENT_RPS` / `APP_RATE_LIMIT_MANAGEMENT_BURST`. Migration `000012_remove_legacy_schema` drops unused upload-session tables and `objects.is_deleted`; back up any historical session data before upgrading and do not run old and new backend versions together.
 
 For manual API testing, set:
 

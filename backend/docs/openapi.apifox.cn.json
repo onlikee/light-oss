@@ -88,36 +88,6 @@
         }
       }
     },
-    "/healthz": {
-      "get": {
-        "tags": ["健康检查"],
-        "operationId": "getHealthz",
-        "summary": "无需认证的健康检查",
-        "description": "返回服务和数据库的健康状态，无需认证。",
-        "responses": {
-          "200": {
-            "description": "服务和数据库均正常。",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HealthzEnvelope"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "服务可用，但数据库检查处于降级状态。响应体仍保持标准成功结构。",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HealthzEnvelope"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/sites/{siteID}": {
       "parameters": [
         {
@@ -268,7 +238,7 @@
         "tags": ["健康检查"],
         "operationId": "getProtectedHealthz",
         "summary": "需要认证的健康检查",
-        "description": "返回与 /healthz 相同的响应体，但需要 Bearer Token。",
+        "description": "返回服务和数据库健康状态，需要 Bearer Token。",
         "security": [
           {
             "bearerAuth": []

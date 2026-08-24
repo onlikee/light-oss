@@ -108,9 +108,9 @@ func TestDeleteFolderDeletesLockedIDsWithoutDeletingLaterMetadata(t *testing.T) 
 		}
 		injected = true
 		err := tx.Session(&gorm.Session{NewDB: true}).Exec(`INSERT INTO objects
-			(bucket_name, object_key, original_filename, storage_path, size, content_type, etag, visibility, is_deleted, created_at, updated_at)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
-			"bucket", "docs/concurrent.txt", "concurrent.txt", "blobs/concurrent", 0, "text/plain", "concurrent", model.VisibilityPrivate, false,
+			(bucket_name, object_key, original_filename, storage_path, size, content_type, etag, visibility, created_at, updated_at)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+			"bucket", "docs/concurrent.txt", "concurrent.txt", "blobs/concurrent", 0, "text/plain", "concurrent", model.VisibilityPrivate,
 		).Error
 		if err != nil {
 			tx.AddError(err)

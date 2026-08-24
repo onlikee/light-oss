@@ -82,7 +82,6 @@ func (s *SitePublishService) PublishFile(
 		ContentType:      NormalizeContentType(input.ContentType),
 		ETag:             staged.ETag,
 		Visibility:       model.VisibilityPublic,
-		IsDeleted:        false,
 	}
 
 	var createdSite *model.Site

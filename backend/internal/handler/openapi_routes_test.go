@@ -140,7 +140,6 @@ func isPublicOpenAPIRoute(route openAPIRouteKey) bool {
 	publicRoutes := map[openAPIRouteKey]struct{}{
 		{Method: http.MethodGet, Path: "/livez"}:                                  {},
 		{Method: http.MethodGet, Path: "/readyz"}:                                 {},
-		{Method: http.MethodGet, Path: "/healthz"}:                                {},
 		{Method: http.MethodGet, Path: "/sites/{siteID}"}:                         {},
 		{Method: http.MethodHead, Path: "/sites/{siteID}"}:                        {},
 		{Method: http.MethodGet, Path: "/sites/{siteID}/{path}"}:                  {},

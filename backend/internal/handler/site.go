@@ -157,7 +157,7 @@ func (h *apiHandler) noRoute(c *gin.Context) {
 		c.Status(http.StatusNotFound)
 		return
 	}
-	if strings.HasPrefix(c.Request.URL.Path, "/api/") || c.Request.URL.Path == "/healthz" {
+	if strings.HasPrefix(c.Request.URL.Path, "/api/") {
 		c.Status(http.StatusNotFound)
 		return
 	}

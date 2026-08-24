@@ -35,8 +35,8 @@ type Config struct {
 	RateLimitBackend               string
 	RateLimitIPRPS                 float64
 	RateLimitIPBurst               int
-	RateLimitRPS                   float64
-	RateLimitBurst                 int
+	RateLimitManagementRPS         float64
+	RateLimitManagementBurst       int
 	RateLimitPublicRPS             float64
 	RateLimitPublicBurst           int
 	RateLimitUploadRPS             float64
@@ -82,16 +82,16 @@ func Load() (Config, error) {
 	v.SetDefault("APP_RATE_LIMIT_BACKEND", RateLimitBackendLocal)
 	v.SetDefault("APP_RATE_LIMIT_IP_RPS", 20.0)
 	v.SetDefault("APP_RATE_LIMIT_IP_BURST", 40)
-	v.SetDefault("APP_RATE_LIMIT_RPS", 5.0)
-	v.SetDefault("APP_RATE_LIMIT_BURST", 10)
+	v.SetDefault("APP_RATE_LIMIT_MANAGEMENT_RPS", 5.0)
+	v.SetDefault("APP_RATE_LIMIT_MANAGEMENT_BURST", 10)
 	v.SetDefault("APP_RATE_LIMIT_PUBLIC_RPS", v.GetFloat64("APP_RATE_LIMIT_IP_RPS"))
 	v.SetDefault("APP_RATE_LIMIT_PUBLIC_BURST", v.GetInt("APP_RATE_LIMIT_IP_BURST"))
-	v.SetDefault("APP_RATE_LIMIT_UPLOAD_RPS", v.GetFloat64("APP_RATE_LIMIT_RPS"))
-	v.SetDefault("APP_RATE_LIMIT_UPLOAD_BURST", v.GetInt("APP_RATE_LIMIT_BURST"))
-	v.SetDefault("APP_RATE_LIMIT_SIGN_RPS", v.GetFloat64("APP_RATE_LIMIT_RPS"))
-	v.SetDefault("APP_RATE_LIMIT_SIGN_BURST", v.GetInt("APP_RATE_LIMIT_BURST"))
-	v.SetDefault("APP_RATE_LIMIT_HEALTH_RPS", v.GetFloat64("APP_RATE_LIMIT_RPS"))
-	v.SetDefault("APP_RATE_LIMIT_HEALTH_BURST", v.GetInt("APP_RATE_LIMIT_BURST"))
+	v.SetDefault("APP_RATE_LIMIT_UPLOAD_RPS", 5.0)
+	v.SetDefault("APP_RATE_LIMIT_UPLOAD_BURST", 10)
+	v.SetDefault("APP_RATE_LIMIT_SIGN_RPS", 5.0)
+	v.SetDefault("APP_RATE_LIMIT_SIGN_BURST", 10)
+	v.SetDefault("APP_RATE_LIMIT_HEALTH_RPS", 5.0)
+	v.SetDefault("APP_RATE_LIMIT_HEALTH_BURST", 10)
 	v.SetDefault("APP_RATE_LIMIT_CACHE_TTL_SECONDS", int64(600))
 	v.SetDefault("APP_RATE_LIMIT_CACHE_MAX_ENTRIES", 10000)
 	v.SetDefault("APP_TRUSTED_PROXIES", "")
@@ -121,8 +121,8 @@ func Load() (Config, error) {
 		RateLimitBackend:               strings.ToLower(strings.TrimSpace(v.GetString("APP_RATE_LIMIT_BACKEND"))),
 		RateLimitIPRPS:                 v.GetFloat64("APP_RATE_LIMIT_IP_RPS"),
 		RateLimitIPBurst:               v.GetInt("APP_RATE_LIMIT_IP_BURST"),
-		RateLimitRPS:                   v.GetFloat64("APP_RATE_LIMIT_RPS"),
-		RateLimitBurst:                 v.GetInt("APP_RATE_LIMIT_BURST"),
+		RateLimitManagementRPS:         v.GetFloat64("APP_RATE_LIMIT_MANAGEMENT_RPS"),
+		RateLimitManagementBurst:       v.GetInt("APP_RATE_LIMIT_MANAGEMENT_BURST"),
 		RateLimitPublicRPS:             v.GetFloat64("APP_RATE_LIMIT_PUBLIC_RPS"),
 		RateLimitPublicBurst:           v.GetInt("APP_RATE_LIMIT_PUBLIC_BURST"),
 		RateLimitUploadRPS:             v.GetFloat64("APP_RATE_LIMIT_UPLOAD_RPS"),
@@ -181,10 +181,10 @@ func Load() (Config, error) {
 		return Config{}, fmt.Errorf("APP_RATE_LIMIT_IP_RPS must be greater than zero")
 	case cfg.RateLimitIPBurst <= 0:
 		return Config{}, fmt.Errorf("APP_RATE_LIMIT_IP_BURST must be greater than zero")
-	case cfg.RateLimitRPS <= 0:
-		return Config{}, fmt.Errorf("APP_RATE_LIMIT_RPS must be greater than zero")
-	case cfg.RateLimitBurst <= 0:
-		return Config{}, fmt.Errorf("APP_RATE_LIMIT_BURST must be greater than zero")
+	case cfg.RateLimitManagementRPS <= 0:
+		return Config{}, fmt.Errorf("APP_RATE_LIMIT_MANAGEMENT_RPS must be greater than zero")
+	case cfg.RateLimitManagementBurst <= 0:
+		return Config{}, fmt.Errorf("APP_RATE_LIMIT_MANAGEMENT_BURST must be greater than zero")
 	case cfg.RateLimitPublicRPS <= 0:
 		return Config{}, fmt.Errorf("APP_RATE_LIMIT_PUBLIC_RPS must be greater than zero")
 	case cfg.RateLimitPublicBurst <= 0:

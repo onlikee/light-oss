@@ -59,7 +59,9 @@ WHERE id = 1;
 
 ## 启动和对账
 
-应用启动会先执行带 MySQL advisory lock 的 migration，并创建或读取根目录 `.storage-id`，再与数据库中的持久身份做只写一次的原子绑定。`reconciled_at` 为空的首次新版本启动会在独立的存储对账 advisory lock 保护下扫描 `objects/`、`staging/` 与旧写路径可能遗留的 `tmp/`；readiness 探针文件会被显式排除。已存在完成标记时，常规启动先校验当前挂载卷身份，再跳过全量文件扫描，避免新副本启动期间把其他副本同时置为 unready。显式对账仍会清空 marker，并由该锁覆盖物理扫描和最终校验：
+应用启动会先执行带 MySQL advisory lock 的 migration，并创建或读取根目录 `.storage-id`，再与数据库中的持久身份做只写一次的原子绑定。`reconciled_at` 为空的首次新版本启动会在独立的存储对账 advisory lock 保护下扫描当前受管的 `objects/` 与 `staging/` 命名空间；readiness 探针文件会被显式排除。已存在完成标记时，常规启动先校验当前挂载卷身份，再跳过全量文件扫描，避免新副本启动期间把其他副本同时置为 unready。显式对账仍会清空 marker，并由该锁覆盖物理扫描和最终校验：
+
+从仍写入 `tmp/` 的旧版本升级时，应先停止旧实例，人工检查并备份或清理该目录。新版本不再把 `tmp/` 视为受管命名空间，数据库迁移也不会修改物理存储。
 
 - 未被台账引用的受管文件登记为 `orphaned` 并计入 `used_bytes`；
 - active 台账缺少物理文件时启动失败；

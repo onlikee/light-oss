@@ -93,13 +93,13 @@ func TestLocalStorageStageRemovesPartialFileWhenReservationFails(t *testing.T) {
 	}
 }
 
-func TestLocalStorageWalkManagedIncludesLegacyTemporaryFilesAndExcludesUnmanagedFiles(t *testing.T) {
+func TestLocalStorageWalkManagedIncludesOnlyCurrentNamespaces(t *testing.T) {
 	root := t.TempDir()
 	writeLocalStorageTestFile(t, root, "objects/a.bin", "object")
 	writeLocalStorageTestFile(t, root, "staging/b.tmp", "stage")
 	writeLocalStorageTestFile(t, root, "objects/.readiness-object.bin", "probe")
 	writeLocalStorageTestFile(t, root, "staging/.readiness-staging.tmp", "probe")
-	writeLocalStorageTestFile(t, root, "tmp/c.tmp", "temporary")
+	writeLocalStorageTestFile(t, root, "tmp/c.tmp", "unmanaged legacy file")
 	writeLocalStorageTestFile(t, root, "unmanaged.bin", "unmanaged")
 	store := NewLocalStorage(root)
 
@@ -107,14 +107,14 @@ func TestLocalStorageWalkManagedIncludesLegacyTemporaryFilesAndExcludesUnmanaged
 	if err != nil {
 		t.Fatalf("walk managed storage: %v", err)
 	}
-	if len(files) != 3 {
-		t.Fatalf("managed files = %+v, want 3", files)
+	if len(files) != 2 {
+		t.Fatalf("managed files = %+v, want 2", files)
 	}
 	paths := map[string]bool{}
 	for _, file := range files {
 		paths[file.RelativePath] = true
 	}
-	if !paths["objects/a.bin"] || !paths["staging/b.tmp"] || !paths["tmp/c.tmp"] {
+	if !paths["objects/a.bin"] || !paths["staging/b.tmp"] || paths["tmp/c.tmp"] {
 		t.Fatalf("managed paths = %+v", paths)
 	}
 }

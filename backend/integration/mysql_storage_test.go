@@ -36,7 +36,7 @@ import (
 
 const (
 	mysqlTestDSNEnvironment = "MYSQL_TEST_DSN"
-	latestMigrationVersion  = 11
+	latestMigrationVersion  = 12
 )
 
 func TestMySQLMigrationsUpDownUp(t *testing.T) {
@@ -93,6 +93,109 @@ func TestMySQLConcurrentMigrationStartupUsesLock(t *testing.T) {
 	}
 	if version != latestMigrationVersion || dirty {
 		t.Fatalf("expected clean migration version %d, got version=%d dirty=%t", latestMigrationVersion, version, dirty)
+	}
+}
+
+func TestMySQLLegacySchemaMigrationRemovesDeadSchema(t *testing.T) {
+	dsn := newIsolatedMySQLDatabase(t)
+	migrator := newMigrator(t, dsn)
+	if err := migrator.Migrate(11); err != nil {
+		t.Fatalf("migrate through version 11: %v", err)
+	}
+
+	db := openGorm(t, dsn)
+	var legacyTableCount int64
+	if err := db.Raw(`
+		SELECT COUNT(*)
+		FROM information_schema.tables
+		WHERE table_schema = DATABASE()
+		  AND table_name IN (
+			'upload_sessions',
+			'upload_session_chunks',
+			'upload_chunk_blobs',
+			'folder_upload_sessions',
+			'folder_upload_entries'
+		)
+	`).Scan(&legacyTableCount).Error; err != nil {
+		t.Fatalf("count legacy tables before migration: %v", err)
+	}
+	if legacyTableCount != 5 {
+		t.Fatalf("legacy table count before migration = %d, want 5", legacyTableCount)
+	}
+
+	if err := migrator.Migrate(latestMigrationVersion); err != nil {
+		t.Fatalf("migrate to version %d: %v", latestMigrationVersion, err)
+	}
+
+	if err := db.Raw(`
+		SELECT COUNT(*)
+		FROM information_schema.tables
+		WHERE table_schema = DATABASE()
+		  AND table_name IN (
+			'upload_sessions',
+			'upload_session_chunks',
+			'upload_chunk_blobs',
+			'folder_upload_sessions',
+			'folder_upload_entries'
+		)
+	`).Scan(&legacyTableCount).Error; err != nil {
+		t.Fatalf("count legacy tables after migration: %v", err)
+	}
+	if legacyTableCount != 0 {
+		t.Fatalf("legacy table count after migration = %d, want 0", legacyTableCount)
+	}
+
+	var softDeleteColumnCount int64
+	if err := db.Raw(`
+		SELECT COUNT(*)
+		FROM information_schema.columns
+		WHERE table_schema = DATABASE()
+		  AND table_name = 'objects'
+		  AND column_name = 'is_deleted'
+	`).Scan(&softDeleteColumnCount).Error; err != nil {
+		t.Fatalf("count soft-delete columns after migration: %v", err)
+	}
+	if softDeleteColumnCount != 0 {
+		t.Fatalf("is_deleted column count after migration = %d, want 0", softDeleteColumnCount)
+	}
+}
+
+func TestMySQLLegacySchemaMigrationRejectsRemainingSoftDeletedRows(t *testing.T) {
+	dsn := newIsolatedMySQLDatabase(t)
+	migrator := newMigrator(t, dsn)
+	if err := migrator.Migrate(11); err != nil {
+		t.Fatalf("migrate through version 11: %v", err)
+	}
+
+	db := openGorm(t, dsn)
+	if err := db.Exec("INSERT INTO buckets (name) VALUES (?)", "legacy-row").Error; err != nil {
+		t.Fatalf("create bucket: %v", err)
+	}
+	if err := db.Exec(`
+		INSERT INTO objects (
+			bucket_name,
+			object_key,
+			original_filename,
+			storage_path,
+			size,
+			content_type,
+			etag,
+			visibility,
+			is_deleted
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, TRUE)
+	`, "legacy-row", "stale.txt", "stale.txt", "objects/stale.bin", 1, "text/plain", "stale", "private").Error; err != nil {
+		t.Fatalf("create stale soft-deleted object: %v", err)
+	}
+
+	if err := migrator.Migrate(latestMigrationVersion); err == nil {
+		t.Fatal("expected legacy schema migration to reject remaining soft-deleted rows")
+	}
+	version, dirty, err := migrator.Version()
+	if err != nil {
+		t.Fatalf("read failed migration version: %v", err)
+	}
+	if version != latestMigrationVersion || !dirty {
+		t.Fatalf("failed migration state = version %d dirty %t, want version %d dirty", version, dirty, latestMigrationVersion)
 	}
 }
 

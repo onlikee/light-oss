@@ -281,7 +281,7 @@ func (s *LocalStorage) Identity(ctx context.Context) (string, error) {
 
 func (s *LocalStorage) WalkManaged(ctx context.Context) ([]ManagedFileInfo, error) {
 	files := make([]ManagedFileInfo, 0)
-	for _, namespace := range []string{"objects", "staging", "tmp"} {
+	for _, namespace := range []string{"objects", "staging"} {
 		namespaceRoot := filepath.Join(s.root, namespace)
 		err := filepath.WalkDir(namespaceRoot, func(path string, entry os.DirEntry, walkErr error) error {
 			if walkErr != nil {

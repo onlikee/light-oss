@@ -92,36 +92,6 @@
         }
       }
     },
-    "/healthz": {
-      "get": {
-        "tags": ["Health"],
-        "operationId": "getHealthz",
-        "summary": "Unauthenticated health check",
-        "description": "Returns service and database health without authentication.",
-        "responses": {
-          "200": {
-            "description": "Service and database are healthy.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HealthzEnvelope"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "Service is up but the database check degraded. The body keeps the normal success envelope.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HealthzEnvelope"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/sites/{siteID}": {
       "parameters": [
         {
@@ -272,7 +242,7 @@
         "tags": ["Health"],
         "operationId": "getProtectedHealthz",
         "summary": "Authenticated health check",
-        "description": "Same payload as /healthz, but requires a Bearer token.",
+        "description": "Returns service and database health and requires a Bearer token.",
         "security": [
           {
             "bearerAuth": []

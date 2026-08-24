@@ -97,7 +97,7 @@ func NewRouter(deps Dependencies) *gin.Engine {
 	}
 	ipRateLimiter := newRateLimiter("global-ip", deps.Config.RateLimitIPRPS, deps.Config.RateLimitIPBurst)
 	publicRateLimiter := newRateLimiter("public", deps.Config.RateLimitPublicRPS, deps.Config.RateLimitPublicBurst)
-	managementRateLimiter := newRateLimiter("management", deps.Config.RateLimitRPS, deps.Config.RateLimitBurst)
+	managementRateLimiter := newRateLimiter("management", deps.Config.RateLimitManagementRPS, deps.Config.RateLimitManagementBurst)
 	uploadRateLimiter := newRateLimiter("upload", deps.Config.RateLimitUploadRPS, deps.Config.RateLimitUploadBurst)
 	signRateLimiter := newRateLimiter("sign", deps.Config.RateLimitSignRPS, deps.Config.RateLimitSignBurst)
 	healthRateLimiter := newRateLimiter("health", deps.Config.RateLimitHealthRPS, deps.Config.RateLimitHealthBurst)
@@ -126,7 +126,6 @@ func NewRouter(deps Dependencies) *gin.Engine {
 	router.GET("/livez", handler.livez)
 	healthCheckLimit := healthRateLimiter.LimitByClientIP()
 	router.GET("/readyz", healthCheckLimit, handler.readyz)
-	router.GET("/healthz", healthCheckLimit, handler.healthz)
 	router.Use(ipRateLimiter.LimitByClientIP())
 
 	registerRoutes(router, handler, deps, routeLimiters{

@@ -185,8 +185,8 @@ light-oss 适合内部工具、原型系统、轻量私有部署，以及需要�
 - `DB_CONNECT_TIMEOUT_SECONDS` / `DB_READ_TIMEOUT_SECONDS` / `DB_WRITE_TIMEOUT_SECONDS` 为 MySQL 网络等待设置有界超时（默认 5/300/30 秒），包括为事务提交响应不确定窗口设置上限。
 - `APP_BEARER_TOKENS` 是 Bearer Token 白名单，多个 token 用逗号分隔。
 - `APP_RATE_LIMIT_BACKEND` 默认为 `local`。设置为 `mysql` 后，鉴权前 IP 桶和各类鉴权后路由桶都通过共享的 `rate_limit_buckets` 表协调；所有副本必须使用一致的速率与 burst 配置。数据库判定失败时会 fail closed 并返回 HTTP 503，不会绕过限流。
-- 限流分为两级：鉴权前由 `APP_RATE_LIMIT_IP_RPS` / `APP_RATE_LIMIT_IP_BURST` 按客户端 IP 粗限流，鉴权后的管理 API 使用 `APP_RATE_LIMIT_RPS` / `APP_RATE_LIMIT_BURST` 身份预算。
-- 公开对象/站点下载、上传、签名链接创建和健康检查使用独立预算，可分别通过 `APP_RATE_LIMIT_PUBLIC_*`、`APP_RATE_LIMIT_UPLOAD_*`、`APP_RATE_LIMIT_SIGN_*`、`APP_RATE_LIMIT_HEALTH_*` 覆盖；未配置时继承上述 IP 或管理预算。
+- 限流分为两级：鉴权前由 `APP_RATE_LIMIT_IP_RPS` / `APP_RATE_LIMIT_IP_BURST` 按客户端 IP 粗限流，鉴权后的管理 API 使用 `APP_RATE_LIMIT_MANAGEMENT_RPS` / `APP_RATE_LIMIT_MANAGEMENT_BURST` 身份预算。
+- 公开对象/站点下载、上传、签名链接创建和健康检查使用独立预算，可分别通过 `APP_RATE_LIMIT_PUBLIC_*`、`APP_RATE_LIMIT_UPLOAD_*`、`APP_RATE_LIMIT_SIGN_*`、`APP_RATE_LIMIT_HEALTH_*` 覆盖；每类路由都有独立的显式默认值。
 - `APP_RATE_LIMIT_CACHE_TTL_SECONDS` 同时控制本地缓存淘汰与共享 MySQL 桶的过期时间；`APP_RATE_LIMIT_CACHE_MAX_ENTRIES` 对本地缓存和 MySQL 共享桶都设置硬上限。共享容量耗尽时，新 key 返回 429，已有 key 仍按原桶判定；过期行释放容量。`APP_TRUSTED_PROXIES` 是以逗号分隔的网关精确 IP 或 CIDR 白名单；留空时忽略转发客户端 IP 请求头，禁止配置全地址范围。
 - `shared-filesystem` 已覆盖同一 MySQL 与共享卷上的双实例交叉上传、读取、覆盖、清理及 lease/staging 故障接管测试；MySQL limiter 也已通过双 Router 并发测试，证明只共享一个 burst。`APP_STORAGE_MODE=local` 或 `APP_RATE_LIMIT_BACKEND=local` 时，后端必须保持 `replicas: 1`；横向扩容必须同时启用两种共享模式，并按运维手册复验实际共享卷。
 - 不要把真实生产密码、签名密钥、token 或域名配置提交到公开仓库。
@@ -196,15 +196,18 @@ light-oss 适合内部工具、原型系统、轻量私有部署，以及需要�
 - OpenAPI 文档：`backend/docs/openapi.apifox.json`
 - 上传性能烟测：`backend/docs/upload-performance-baseline.zh-CN.md`
 - Blob 台账、对账与迁移操作：`backend/docs/storage-lifecycle-operations.zh-CN.md`
-- 历史分片上传表隔离说明：`backend/docs/legacy-upload-session-tables.zh-CN.md`
+- 历史 schema 清理说明：`backend/docs/legacy-upload-session-tables.zh-CN.md`
+- 后端代码组织约定：`backend/docs/code-organization.zh-CN.md`
 - 主要鉴权 API 前缀：`/api/v1`
-- 存活检查：`GET /livez`；就绪检查：`GET /readyz`；兼容健康检查：`GET /healthz`
+- 存活检查：`GET /livez`；就绪检查：`GET /readyz`
 - 鉴权健康检查：`GET /api/v1/healthz`
 - 鉴权运行时指标：`GET /api/v1/system/metrics`
 - 对象 API 路径里的 key 是完整对象路径，嵌套 `/` 会表现为类似目录的前缀。
 - 静态站点只会服务 public 对象。
 - 成功 JSON 响应通常为 `{"request_id":"...","data":...}`。
 - 失败 JSON 响应通常为 `{"request_id":"...","error":{"code":"...","message":"..."}}`。
+
+升级提示：旧的公开 `GET /healthz` 别名以及 `APP_RATE_LIMIT_RPS` / `APP_RATE_LIMIT_BURST` 变量已移除，请改用 `/livez`、`/readyz` 和 `APP_RATE_LIMIT_MANAGEMENT_RPS` / `APP_RATE_LIMIT_MANAGEMENT_BURST`。迁移 `000012_remove_legacy_schema` 会删除未使用的上传会话表和 `objects.is_deleted`；升级前如需保留历史会话数据请先备份，且新旧后端版本不可混跑。
 
 手动测试 API 时可以先设置：
 
