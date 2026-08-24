@@ -96,6 +96,37 @@ func TestMySQLConcurrentMigrationStartupUsesLock(t *testing.T) {
 	}
 }
 
+func TestMySQLStorageReconciliationLockKeepsQuotaModel(t *testing.T) {
+	dsn := newIsolatedMySQLDatabase(t)
+	migrator := newMigrator(t, dsn)
+	if err := migrator.Up(); err != nil {
+		t.Fatalf("migration up: %v", err)
+	}
+
+	repo := repository.NewStorageBlobRepository(openGorm(t, dsn))
+	storageID := uuid.NewString()
+	if err := repo.WithReconciliationLock(context.Background(), time.Second, func(lockedRepo *repository.StorageBlobRepository) error {
+		claimed, err := lockedRepo.ClaimStorageIdentity(context.Background(), storageID)
+		if err != nil {
+			return err
+		}
+		if !claimed {
+			t.Fatalf("storage identity was not claimed")
+		}
+		return nil
+	}); err != nil {
+		t.Fatalf("claim storage identity while holding reconciliation lock: %v", err)
+	}
+
+	var quota model.SystemStorageQuota
+	if err := openGorm(t, dsn).First(&quota, "id = ?", 1).Error; err != nil {
+		t.Fatalf("load storage quota: %v", err)
+	}
+	if quota.StorageID == nil || *quota.StorageID != storageID {
+		t.Fatalf("storage identity = %v, want %q", quota.StorageID, storageID)
+	}
+}
+
 func TestMySQLAtomicQuotaReservationAcrossInstances(t *testing.T) {
 	dsn := newIsolatedMySQLDatabase(t)
 	migrator := newMigrator(t, dsn)

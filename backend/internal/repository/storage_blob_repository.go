@@ -88,7 +88,10 @@ func (r *StorageBlobRepository) WithReconciliationLock(
 			}
 		}()
 
-		return fn(r.WithDB(connection))
+		// Scan stores the GET_LOCK result schema on connection's statement. Start
+		// the reconciliation work with an initialized fresh statement while
+		// preserving the pinned MySQL connection that owns the advisory lock.
+		return fn(r.WithDB(connection.Session(&gorm.Session{NewDB: true, Initialized: true})))
 	})
 }
 
