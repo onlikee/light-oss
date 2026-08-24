@@ -201,7 +201,7 @@ export function SettingsPage() {
       </div>
 
       <div className="space-y-6">
-        <Card className="border-border/70 bg-card">
+        <Card>
           <CardHeader className="gap-3 border-b">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div className="space-y-1">
@@ -305,7 +305,7 @@ export function SettingsPage() {
           </form>
         </Card>
 
-        <Card className="border-border/70 bg-card">
+        <Card>
           <CardHeader className="gap-3 border-b">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div className="space-y-1">
@@ -449,7 +449,7 @@ export function SettingsPage() {
           </CardFooter>
         </Card>
 
-        <Card className="gap-0 border-border/70 bg-card py-4">
+        <Card>
           <CardHeader className="border-b">
             <CardTitle>{t("settings.preferences.title")}</CardTitle>
             <CardDescription>

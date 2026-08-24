@@ -348,19 +348,6 @@ export function DashboardPage() {
         </Card>
       </div>
 
-      <Card className="border-border/70 bg-card">
-        <CardContent className="flex flex-col gap-3 p-5">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium">{t("header.connection")}</p>
-            <Badge variant="outline">
-              {tokenConfigured ? t("common.configured") : t("common.missing")}
-            </Badge>
-          </div>
-          <div className="rounded-xl border border-border/70 bg-muted px-3 py-3 text-sm text-muted-foreground">
-            {host}
-          </div>
-        </CardContent>
-      </Card>
     </section>
   );
 }
