@@ -6,14 +6,7 @@
 - `APP_STORAGE_MODE=shared-filesystem` 已覆盖同一 MySQL 与共享根目录下的双实例交叉读写及故障接管测试；MySQL 共享 limiter 也已通过双 Router 并发验收。横向扩容必须同时设置 `APP_RATE_LIMIT_BACKEND=mysql`，并在目标共享卷上复验。
 - `storage_blobs`、`system_storage_quotas.used_bytes/reserved_bytes` 和 `storage_cleanup_jobs` 是配额与 Blob 生命周期的事实来源，不要在服务运行时人工重置计数。
 
-首次应用 `000007_storage_blobs` 和切换新写路径时，必须先摘流量并停止所有旧版本写实例。该迁移只对执行瞬间已有的 `objects` 与 `recycle_bin_objects` 做一次性回填；若旧实例在回填后继续写入，会生成没有 Blob 台账和配额记录的元数据。保持 `replicas: 1`，先由单个新版本实例完成 migration 与对账并确认 `reconciled_at` 已写入，再恢复写流量。不要用新旧版本滚动共写的方式执行本次切换。
-
-`000008` 至 `000011` 必须随同一版本按编号顺序应用，不能只挑选其中一条：
-
-- `000008_rate_limit_buckets` 创建共享限流桶和全局容量单例行。
-- `000009_staging_activity` 增加基于数据库时钟的 staging lease；升级瞬间遗留的 staging 会被标记为已到期，因此迁移前必须先停止并排空旧上传请求。
-- `000010_recycle_delete_groups` 为每次顶层删除建立稳定组 ID，并对旧回收站数据做确定性回填；迁移后恢复和永久删除不再用时间戳加路径前缀推测归属。
-- `000011_storage_identity` 增加共享根目录身份绑定并清空旧 `reconciled_at`。升级后的第一次启动必须挂载正确存储根目录并完成强制全量核验，之后才能恢复流量。
+当前迁移目录只包含 `000001_init` 基线，适用于全新空数据库。首次启动会创建全部运行时表、初始化配额与限流容量单例行，并在存储根目录上完成身份绑定和全量对账后写入 `reconciled_at`。不要将旧版本应用与该基线混用。
 
 ### 共享文件卷契约
 
@@ -33,7 +26,7 @@ APP_STORAGE_ROOT=/data/storage
 
 ### 共享限流契约
 
-启用多实例共享限流前，先确保 migration 已应用 `000008_rate_limit_buckets`，然后让所有副本使用同一 MySQL 与完全一致的限流预算：
+启用多实例共享限流前，先确保 `000001_init` 已成功应用，然后让所有副本使用同一 MySQL 与完全一致的限流预算：
 
 ```env
 APP_RATE_LIMIT_BACKEND=mysql
@@ -138,7 +131,6 @@ go test ./integration -run '^TestMySQLSharedRateLimitHasGlobalCapacityAndExpiry$
 go test ./integration -run '^TestMySQLSharedFilesystemCrossInstanceLifecycleAndTakeover$' -count=1
 go test ./integration -run '^TestMySQLStorageIdentityRejectsDifferentSharedRoot$' -count=1
 go test ./integration -run '^TestMySQLStagingHeartbeatPreventsCrossInstanceCleanup$' -count=1
-go test ./migrations -run '^TestRecycleDeleteGroupMigration' -count=1
 ```
 
 测试会创建带 `light_oss_test_` 前缀的隔离数据库，并在结束时删除；DSN 用户必须具有创建和删除测试数据库的权限。

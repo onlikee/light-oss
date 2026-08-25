@@ -1,2 +1,0 @@
-DROP TABLE IF EXISTS site_domains;
-DROP TABLE IF EXISTS sites;

@@ -1,2 +1,10 @@
+DROP TABLE IF EXISTS rate_limit_buckets;
+DROP TABLE IF EXISTS rate_limit_capacity;
+DROP TABLE IF EXISTS storage_cleanup_jobs;
+DROP TABLE IF EXISTS storage_blobs;
+DROP TABLE IF EXISTS recycle_bin_objects;
+DROP TABLE IF EXISTS site_domains;
+DROP TABLE IF EXISTS sites;
 DROP TABLE IF EXISTS objects;
+DROP TABLE IF EXISTS system_storage_quotas;
 DROP TABLE IF EXISTS buckets;

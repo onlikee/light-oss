@@ -220,7 +220,7 @@ HTTP / Gin
 - 补齐 OpenAPI 当前缺失的 10 个路径，并增加“代码路由与 OpenAPI 路径一致”的测试。
 - 增加真实 MySQL 集成测试，SQLite 继续用于快速测试，但不再作为事务、锁和迁移行为的唯一证据。
 
-当前状态（2026-08-25）：以上代码边界任务已落地。handler、Explorer/Recycle、Blob 生命周期和 Blob 仓储已按领域职责拆分；`000012_remove_legacy_schema` 删除未接入运行时的上传会话表和 `objects.is_deleted`，公开兼容健康路由及旧 `tmp/` 扫描也已移除。
+当前状态（2026-08-25）：以上代码边界任务已落地。handler、Explorer/Recycle、Blob 生命周期和 Blob 仓储已按领域职责拆分；当前迁移基线不包含未接入运行时的上传会话表或 `objects.is_deleted`，公开兼容健康路由及旧 `tmp/` 扫描也已移除。
 
 验收：
 
