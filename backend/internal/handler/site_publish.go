@@ -107,7 +107,7 @@ func parseSitePublishBool(raw string, defaultValue bool, fieldName string) (bool
 		return defaultValue, nil
 	}
 
-	switch strings.ToLower(trimmed) {
+	switch trimmed {
 	case "true":
 		return true, nil
 	case "false":

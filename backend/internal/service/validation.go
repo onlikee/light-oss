@@ -130,7 +130,7 @@ func ValidateFolderName(name string) error {
 }
 
 func ParseVisibility(value string) (model.Visibility, error) {
-	switch strings.ToLower(strings.TrimSpace(value)) {
+	switch strings.TrimSpace(value) {
 	case string(model.VisibilityPublic):
 		return model.VisibilityPublic, nil
 	case "", string(model.VisibilityPrivate):

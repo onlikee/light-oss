@@ -21,13 +21,13 @@ type createBucketRequest struct {
 }
 
 type updateObjectVisibilityRequest struct {
-	Visibility string `json:"visibility"`
+	Visibility *string `json:"visibility"`
 }
 
 type signDownloadRequest struct {
 	Bucket           string `json:"bucket"`
 	ObjectKey        string `json:"object_key"`
-	ExpiresInSeconds int64  `json:"expires_in_seconds"`
+	ExpiresInSeconds *int64 `json:"expires_in_seconds"`
 }
 
 type bucketResponse struct {
@@ -120,7 +120,16 @@ func (h *apiHandler) uploadObject(c *gin.Context) {
 }
 
 func (h *apiHandler) listObjects(c *gin.Context) {
-	limit, _ := strconv.Atoi(c.Query("limit"))
+	rawLimit, limitProvided := c.GetQuery("limit")
+	limit, err := parseOptionalIntQuery(rawLimit, limitProvided)
+	if err != nil {
+		response.Error(c, apperrors.New(http.StatusBadRequest, "invalid_request", "limit must be an integer"))
+		return
+	}
+	if limitProvided && (limit < 1 || limit > 100) {
+		response.Error(c, apperrors.New(http.StatusBadRequest, "invalid_request", "limit must be between 1 and 100"))
+		return
+	}
 	result, err := h.objectService.List(c.Request.Context(), service.ListObjectsInput{
 		BucketName: c.Param("bucket"),
 		Prefix:     c.Query("prefix"),
@@ -149,12 +158,16 @@ func (h *apiHandler) updateObjectVisibility(c *gin.Context) {
 		response.Error(c, apperrors.New(http.StatusBadRequest, "invalid_request", "request body is invalid"))
 		return
 	}
+	if req.Visibility == nil {
+		response.Error(c, apperrors.New(http.StatusBadRequest, "invalid_request", "visibility is required"))
+		return
+	}
 
 	object, err := h.objectService.UpdateVisibility(
 		c.Request.Context(),
 		c.Param("bucket"),
 		normalizeObjectKey(c.Param("key")),
-		req.Visibility,
+		*req.Visibility,
 	)
 	if err != nil {
 		response.Error(c, err)
@@ -234,8 +247,16 @@ func (h *apiHandler) signDownload(c *gin.Context) {
 		response.Error(c, apperrors.New(http.StatusBadRequest, "invalid_request", "request body is invalid"))
 		return
 	}
+	expiresInSeconds := int64(0)
+	if req.ExpiresInSeconds != nil {
+		if *req.ExpiresInSeconds <= 0 {
+			response.Error(c, apperrors.New(http.StatusBadRequest, "invalid_expiry", "expires_in_seconds must be greater than zero"))
+			return
+		}
+		expiresInSeconds = *req.ExpiresInSeconds
+	}
 
-	path, expiresAt, err := h.signService.GenerateDownloadPath(req.Bucket, req.ObjectKey, req.ExpiresInSeconds)
+	path, expiresAt, err := h.signService.GenerateDownloadPath(req.Bucket, req.ObjectKey, expiresInSeconds)
 	if err != nil {
 		response.Error(c, err)
 		return

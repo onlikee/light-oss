@@ -337,6 +337,55 @@ func TestLoadRejectsInvalidDatabasePoolSettings(t *testing.T) {
 	}
 }
 
+func TestLoadValidatesSignedURLTTLSettings(t *testing.T) {
+	tests := []struct {
+		name        string
+		settings    []string
+		wantMessage string
+	}{
+		{
+			name:        "zero default",
+			settings:    []string{"APP_DEFAULT_SIGNED_URL_TTL_SECONDS=0"},
+			wantMessage: "APP_DEFAULT_SIGNED_URL_TTL_SECONDS must be greater than zero",
+		},
+		{
+			name:        "zero maximum",
+			settings:    []string{"APP_MAX_SIGNED_URL_TTL_SECONDS=0"},
+			wantMessage: "APP_MAX_SIGNED_URL_TTL_SECONDS must be greater than zero",
+		},
+		{
+			name: "default exceeds maximum",
+			settings: []string{
+				"APP_DEFAULT_SIGNED_URL_TTL_SECONDS=11",
+				"APP_MAX_SIGNED_URL_TTL_SECONDS=10",
+			},
+			wantMessage: "APP_DEFAULT_SIGNED_URL_TTL_SECONDS must not exceed APP_MAX_SIGNED_URL_TTL_SECONDS",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resetConfigEnv(t)
+			values := []string{
+				"DB_DSN=test-dsn",
+				"APP_STORAGE_ROOT=./storage",
+				"APP_BEARER_TOKENS=test-token",
+				"APP_SIGNING_SECRET=test-secret",
+			}
+			values = append(values, tt.settings...)
+			values = append(values, "")
+			prepareBackendWorkspace(t, map[string]string{
+				".env": strings.Join(values, "\n"),
+			})
+
+			_, err := Load()
+			if err == nil || !strings.Contains(err.Error(), tt.wantMessage) {
+				t.Fatalf("Load() error = %v, want message containing %q", err, tt.wantMessage)
+			}
+		})
+	}
+}
+
 func prepareBackendWorkspace(t *testing.T, files map[string]string) {
 	t.Helper()
 

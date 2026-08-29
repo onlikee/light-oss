@@ -109,11 +109,11 @@ func (s *RecycleBinService) ListObjects(ctx context.Context, input ListRecycleBi
 	}
 
 	limit := input.Limit
-	if limit <= 0 {
+	if limit == 0 {
 		limit = defaultListLimit
 	}
-	if limit > maxListLimit {
-		limit = maxListLimit
+	if limit < 1 || limit > maxListLimit {
+		return nil, apperrors.New(http.StatusBadRequest, "invalid_request", "limit must be between 1 and 100")
 	}
 
 	cursor, err := decodeRecycleBinCursor(input.Cursor)

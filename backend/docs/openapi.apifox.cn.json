@@ -9,6 +9,10 @@
     {
       "url": "http://localhost:8080",
       "description": "本地后端默认地址"
+    },
+    {
+      "url": "http://api.localhost",
+      "description": "网关示例地址"
     }
   ],
   "tags": [
@@ -50,12 +54,22 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessEnvelope"
+                  "$ref": "#/components/schemas/LivenessEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       }
     },
     "/readyz": {
@@ -70,8 +84,28 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessEnvelope"
+                  "$ref": "#/components/schemas/ReadinessEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "请求超过限流阈值。错误代码：rate_limited。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -83,9 +117,19 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       }
     },
     "/sites/{siteID}": {
@@ -109,8 +153,20 @@
               "Content-Length": {
                 "$ref": "#/components/headers/ContentLengthHeader"
               },
+              "Content-Disposition": {
+                "$ref": "#/components/headers/ContentDispositionHeader"
+              },
               "ETag": {
                 "$ref": "#/components/headers/ETagHeader"
+              },
+              "X-Object-Visibility": {
+                "$ref": "#/components/headers/ObjectVisibilityHeader"
+              },
+              "X-Original-Filename": {
+                "$ref": "#/components/headers/OriginalFilenameHeader"
+              },
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             },
             "content": {
@@ -123,12 +179,98 @@
             }
           },
           "400": {
-            "description": "站点标识无效。无响应体。"
+            "description": "站点标识无效。无响应体。",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
           },
           "404": {
-            "description": "站点或请求的内容不存在。若已配置错误文档，可能使用此状态码返回文档内容。"
+            "description": "站点或请求的内容不存在。若已配置错误文档，可能使用此状态码返回文档内容。",
+            "headers": {
+              "Content-Type": {
+                "$ref": "#/components/headers/ContentTypeHeader"
+              },
+              "Content-Length": {
+                "$ref": "#/components/headers/ContentLengthHeader"
+              },
+              "Content-Disposition": {
+                "$ref": "#/components/headers/ContentDispositionHeader"
+              },
+              "ETag": {
+                "$ref": "#/components/headers/ETagHeader"
+              },
+              "X-Object-Visibility": {
+                "$ref": "#/components/headers/ObjectVisibilityHeader"
+              },
+              "X-Original-Filename": {
+                "$ref": "#/components/headers/OriginalFilenameHeader"
+              },
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            },
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "请求超过限流阈值。错误代码：rate_limited。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "500": {
+            "description": "内部操作失败，错误代码取决于失败的子系统。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "共享限流后端不可用。错误代码：rate_limit_unavailable。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       },
       "head": {
         "tags": ["站点"],
@@ -145,18 +287,108 @@
               "Content-Length": {
                 "$ref": "#/components/headers/ContentLengthHeader"
               },
+              "Content-Disposition": {
+                "$ref": "#/components/headers/ContentDispositionHeader"
+              },
               "ETag": {
                 "$ref": "#/components/headers/ETagHeader"
+              },
+              "X-Object-Visibility": {
+                "$ref": "#/components/headers/ObjectVisibilityHeader"
+              },
+              "X-Original-Filename": {
+                "$ref": "#/components/headers/OriginalFilenameHeader"
+              },
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
           "400": {
-            "description": "站点标识无效。无响应体。"
+            "description": "站点标识无效。无响应体。",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
           },
           "404": {
-            "description": "站点或请求的内容不存在。无响应体。"
+            "description": "站点或请求的内容不存在。HEAD 无响应体；配置错误文档时会返回该文档的表示 Header。",
+            "headers": {
+              "Content-Type": {
+                "$ref": "#/components/headers/ContentTypeHeader"
+              },
+              "Content-Length": {
+                "$ref": "#/components/headers/ContentLengthHeader"
+              },
+              "Content-Disposition": {
+                "$ref": "#/components/headers/ContentDispositionHeader"
+              },
+              "ETag": {
+                "$ref": "#/components/headers/ETagHeader"
+              },
+              "X-Object-Visibility": {
+                "$ref": "#/components/headers/ObjectVisibilityHeader"
+              },
+              "X-Original-Filename": {
+                "$ref": "#/components/headers/OriginalFilenameHeader"
+              },
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "请求超过限流阈值。错误代码：rate_limited。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "500": {
+            "description": "内部操作失败，错误代码取决于失败的子系统。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "共享限流后端不可用。错误代码：rate_limit_unavailable。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       }
     },
     "/sites/{siteID}/{path}": {
@@ -183,8 +415,20 @@
               "Content-Length": {
                 "$ref": "#/components/headers/ContentLengthHeader"
               },
+              "Content-Disposition": {
+                "$ref": "#/components/headers/ContentDispositionHeader"
+              },
               "ETag": {
                 "$ref": "#/components/headers/ETagHeader"
+              },
+              "X-Object-Visibility": {
+                "$ref": "#/components/headers/ObjectVisibilityHeader"
+              },
+              "X-Original-Filename": {
+                "$ref": "#/components/headers/OriginalFilenameHeader"
+              },
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             },
             "content": {
@@ -197,12 +441,98 @@
             }
           },
           "400": {
-            "description": "站点标识或内容路径无效。无响应体。"
+            "description": "站点标识或内容路径无效。无响应体。",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
           },
           "404": {
-            "description": "站点或请求的内容不存在。若已配置回退或错误文档，可能使用此状态码返回文档内容。"
+            "description": "站点或请求的内容不存在。若已配置回退或错误文档，可能使用此状态码返回文档内容。",
+            "headers": {
+              "Content-Type": {
+                "$ref": "#/components/headers/ContentTypeHeader"
+              },
+              "Content-Length": {
+                "$ref": "#/components/headers/ContentLengthHeader"
+              },
+              "Content-Disposition": {
+                "$ref": "#/components/headers/ContentDispositionHeader"
+              },
+              "ETag": {
+                "$ref": "#/components/headers/ETagHeader"
+              },
+              "X-Object-Visibility": {
+                "$ref": "#/components/headers/ObjectVisibilityHeader"
+              },
+              "X-Original-Filename": {
+                "$ref": "#/components/headers/OriginalFilenameHeader"
+              },
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            },
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "请求超过限流阈值。错误代码：rate_limited。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "500": {
+            "description": "内部操作失败，错误代码取决于失败的子系统。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "共享限流后端不可用。错误代码：rate_limit_unavailable。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       },
       "head": {
         "tags": ["站点"],
@@ -219,18 +549,108 @@
               "Content-Length": {
                 "$ref": "#/components/headers/ContentLengthHeader"
               },
+              "Content-Disposition": {
+                "$ref": "#/components/headers/ContentDispositionHeader"
+              },
               "ETag": {
                 "$ref": "#/components/headers/ETagHeader"
+              },
+              "X-Object-Visibility": {
+                "$ref": "#/components/headers/ObjectVisibilityHeader"
+              },
+              "X-Original-Filename": {
+                "$ref": "#/components/headers/OriginalFilenameHeader"
+              },
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
           "400": {
-            "description": "站点标识或内容路径无效。无响应体。"
+            "description": "站点标识或内容路径无效。无响应体。",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
           },
           "404": {
-            "description": "站点或请求的内容不存在。无响应体。"
+            "description": "站点或请求的内容不存在。HEAD 无响应体；配置错误文档时会返回该文档的表示 Header。",
+            "headers": {
+              "Content-Type": {
+                "$ref": "#/components/headers/ContentTypeHeader"
+              },
+              "Content-Length": {
+                "$ref": "#/components/headers/ContentLengthHeader"
+              },
+              "Content-Disposition": {
+                "$ref": "#/components/headers/ContentDispositionHeader"
+              },
+              "ETag": {
+                "$ref": "#/components/headers/ETagHeader"
+              },
+              "X-Object-Visibility": {
+                "$ref": "#/components/headers/ObjectVisibilityHeader"
+              },
+              "X-Original-Filename": {
+                "$ref": "#/components/headers/OriginalFilenameHeader"
+              },
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "请求超过限流阈值。错误代码：rate_limited。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "500": {
+            "description": "内部操作失败，错误代码取决于失败的子系统。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "共享限流后端不可用。错误代码：rate_limit_unavailable。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       }
     },
     "/api/v1/healthz": {
@@ -253,6 +673,11 @@
                   "$ref": "#/components/schemas/HealthzEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "401": {
@@ -263,19 +688,71 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
-          "503": {
-            "description": "服务可用，但数据库检查处于降级状态。响应体仍保持标准成功结构。",
+          "429": {
+            "description": "请求超过限流阈值。错误代码：rate_limited。",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HealthzEnvelope"
+                  "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "500": {
+            "description": "内部操作失败，错误代码取决于失败的子系统。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "数据库健康检查降级（HealthzEnvelope），或共享限流后端不可用（ErrorEnvelope）。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/HealthzEnvelope"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ErrorEnvelope"
+                    }
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       }
     },
     "/api/v1/system/metrics": {
@@ -295,8 +772,13 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessEnvelope"
+                  "$ref": "#/components/schemas/SystemMetricsEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -308,9 +790,64 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "请求超过限流阈值。错误代码：rate_limited。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "500": {
+            "description": "内部操作失败，错误代码取决于失败的子系统。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "共享限流后端不可用。错误代码：rate_limit_unavailable。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       }
     },
     "/api/v1/system/stats": {
@@ -330,8 +867,13 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessEnvelope"
+                  "$ref": "#/components/schemas/SystemStatsEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -343,6 +885,26 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "请求超过限流阈值。错误代码：rate_limited。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "500": {
@@ -353,9 +915,34 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "共享限流后端不可用。错误代码：rate_limit_unavailable。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       }
     },
     "/api/v1/system/storage/quota": {
@@ -393,8 +980,13 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessEnvelope"
+                  "$ref": "#/components/schemas/StorageQuotaEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -406,6 +998,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "401": {
@@ -415,6 +1012,41 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "409": {
+            "description": "新配额低于当前用量。错误代码：storage_limit_below_usage。",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "请求超过限流阈值。错误代码：rate_limited。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -426,9 +1058,34 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "共享限流后端不可用。错误代码：rate_limit_unavailable。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       }
     },
     "/api/v1/buckets": {
@@ -444,6 +1101,9 @@
         "parameters": [
           {
             "$ref": "#/components/parameters/BucketSearchQuery"
+          },
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
           }
         ],
         "responses": {
@@ -455,6 +1115,11 @@
                   "$ref": "#/components/schemas/BucketListEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "401": {
@@ -465,6 +1130,26 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "请求超过限流阈值。错误代码：rate_limited。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "500": {
@@ -474,6 +1159,26 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "共享限流后端不可用。错误代码：rate_limit_unavailable。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           }
@@ -507,6 +1212,11 @@
                   "$ref": "#/components/schemas/BucketEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "400": {
@@ -516,6 +1226,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -527,6 +1242,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "409": {
@@ -536,6 +1256,26 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "请求超过限流阈值。错误代码：rate_limited。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -547,9 +1287,34 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "共享限流后端不可用。错误代码：rate_limit_unavailable。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       }
     },
     "/api/v1/buckets/{bucket}": {
@@ -570,7 +1335,12 @@
         ],
         "responses": {
           "204": {
-            "description": "存储桶已删除。无响应体。"
+            "description": "存储桶已删除。无响应体。",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
           },
           "400": {
             "description": "存储桶名称无效。错误代码：invalid_bucket_name。",
@@ -579,6 +1349,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -590,6 +1365,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "404": {
@@ -599,6 +1379,26 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "请求超过限流阈值。错误代码：rate_limited。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -610,9 +1410,34 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "共享限流后端不可用。错误代码：rate_limit_unavailable。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       }
     },
     "/api/v1/buckets/{bucket}/folders": {
@@ -640,6 +1465,11 @@
                   "$ref": "#/components/schemas/FolderNodeListEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "400": {
@@ -649,6 +1479,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -660,6 +1495,41 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "请求超过限流阈值。错误代码：rate_limited。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "404": {
+            "description": "未找到存储桶。错误代码：bucket_not_found。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "500": {
@@ -670,9 +1540,34 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "共享限流后端不可用。错误代码：rate_limit_unavailable。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       },
       "post": {
         "tags": ["文件夹"],
@@ -702,6 +1597,11 @@
                   "$ref": "#/components/schemas/FolderNodeEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "400": {
@@ -711,6 +1611,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -722,6 +1627,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "404": {
@@ -731,6 +1641,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -742,6 +1657,26 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "请求超过限流阈值。错误代码：rate_limited。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "500": {
@@ -752,9 +1687,34 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "共享限流后端不可用。错误代码：rate_limit_unavailable。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       },
       "delete": {
         "tags": ["文件夹"],
@@ -772,11 +1732,19 @@
           },
           {
             "$ref": "#/components/parameters/RecursiveQuery"
+          },
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
           }
         ],
         "responses": {
           "204": {
-            "description": "文件夹已删除。无响应正文。"
+            "description": "文件夹已删除。无响应正文。",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
           },
           "400": {
             "description": "存储桶名称、文件夹路径或递归查询无效。错误代码： invalid_bucket_name、invalid_folder_path、invalid_request、invalid_prefix。",
@@ -785,6 +1753,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -796,6 +1769,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "404": {
@@ -805,6 +1783,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -816,6 +1799,26 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "请求超过限流阈值。错误代码：rate_limited。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "500": {
@@ -825,6 +1828,26 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "共享限流后端不可用。错误代码：rate_limit_unavailable。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           }
@@ -850,6 +1873,9 @@
         "parameters": [
           {
             "$ref": "#/components/parameters/FolderPathQuery"
+          },
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
           }
         ],
         "responses": {
@@ -862,6 +1888,11 @@
                   "format": "binary"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "400": {
@@ -871,6 +1902,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -882,6 +1918,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "404": {
@@ -892,6 +1933,26 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "请求超过限流阈值。错误代码：rate_limited。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "500": {
@@ -901,6 +1962,26 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "共享限流后端不可用。错误代码：rate_limit_unavailable。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           }
@@ -917,7 +1998,7 @@
         "tags": ["文件夹"],
         "operationId": "listExplorerEntries",
         "summary": "在文件夹前缀下列出直接条目",
-        "description": "条目先按目录排序，然后按文件名排序。next_cursor是相同前缀/search组合的不透明光标。",
+        "description": "列出当前前缀下的直接条目，目录始终排在文件之前。sort_by 默认 created_at，sort_order 默认 desc；目录始终按名称并使用所选方向比较。游标必须与原排序配置一致。",
         "security": [
           {
             "bearerAuth": []
@@ -935,6 +2016,15 @@
           },
           {
             "$ref": "#/components/parameters/CursorQuery"
+          },
+          {
+            "$ref": "#/components/parameters/ExplorerSortByQuery"
+          },
+          {
+            "$ref": "#/components/parameters/ExplorerSortOrderQuery"
+          },
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
           }
         ],
         "responses": {
@@ -946,6 +2036,11 @@
                   "$ref": "#/components/schemas/ExplorerEntryListEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "400": {
@@ -955,6 +2050,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -966,6 +2066,41 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "请求超过限流阈值。错误代码：rate_limited。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "404": {
+            "description": "未找到存储桶。错误代码：bucket_not_found。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "500": {
@@ -975,6 +2110,26 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "共享限流后端不可用。错误代码：rate_limit_unavailable。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           }
@@ -1037,8 +2192,13 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessEnvelope"
+                  "$ref": "#/components/schemas/ExplorerBatchDeleteEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -1050,6 +2210,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "401": {
@@ -1059,6 +2224,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -1070,9 +2240,64 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "请求超过限流阈值。错误代码：rate_limited。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "500": {
+            "description": "内部操作失败，错误代码取决于失败的子系统。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "共享限流后端不可用。错误代码：rate_limit_unavailable。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       }
     },
     "/api/v1/buckets/{bucket}/objects": {
@@ -1100,6 +2325,9 @@
           },
           {
             "$ref": "#/components/parameters/CursorQuery"
+          },
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
           }
         ],
         "responses": {
@@ -1111,6 +2339,11 @@
                   "$ref": "#/components/schemas/ObjectListEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "400": {
@@ -1120,6 +2353,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -1131,6 +2369,41 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "请求超过限流阈值。错误代码：rate_limited。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "404": {
+            "description": "未找到存储桶。错误代码：bucket_not_found。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "500": {
@@ -1140,6 +2413,26 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "共享限流后端不可用。错误代码：rate_limit_unavailable。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           }
@@ -1165,6 +2458,9 @@
         "parameters": [
           {
             "$ref": "#/components/parameters/AllowOverwriteHeader"
+          },
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
           }
         ],
         "requestBody": {
@@ -1173,6 +2469,11 @@
             "multipart/form-data": {
               "schema": {
                 "$ref": "#/components/schemas/UploadBatchForm"
+              },
+              "encoding": {
+                "manifest": {
+                  "contentType": "application/json"
+                }
               }
             }
           }
@@ -1186,6 +2487,11 @@
                   "$ref": "#/components/schemas/UploadBatchEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "400": {
@@ -1195,6 +2501,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -1206,6 +2517,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "404": {
@@ -1215,6 +2531,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -1226,6 +2547,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "413": {
@@ -1236,6 +2562,26 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "请求超过限流阈值。错误代码：rate_limited。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "500": {
@@ -1245,6 +2591,26 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "共享限流后端不可用。错误代码：rate_limit_unavailable。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           }
@@ -1274,6 +2640,12 @@
           },
           {
             "$ref": "#/components/parameters/DownloadSignatureQuery"
+          },
+          {
+            "$ref": "#/components/parameters/DownloadQuery"
+          },
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
           }
         ],
         "responses": {
@@ -1286,6 +2658,9 @@
               "Content-Length": {
                 "$ref": "#/components/headers/ContentLengthHeader"
               },
+              "Content-Disposition": {
+                "$ref": "#/components/headers/ContentDispositionHeader"
+              },
               "ETag": {
                 "$ref": "#/components/headers/ETagHeader"
               },
@@ -1294,6 +2669,9 @@
               },
               "X-Original-Filename": {
                 "$ref": "#/components/headers/OriginalFilenameHeader"
+              },
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             },
             "content": {
@@ -1313,6 +2691,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "401": {
@@ -1322,6 +2705,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -1333,6 +2721,26 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "请求超过限流阈值。错误代码：rate_limited。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "500": {
@@ -1342,6 +2750,26 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "共享限流后端不可用。错误代码：rate_limit_unavailable。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           }
@@ -1355,6 +2783,12 @@
         "parameters": [
           {
             "$ref": "#/components/parameters/OptionalAuthorizationHeader"
+          },
+          {
+            "$ref": "#/components/parameters/DownloadQuery"
+          },
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
           }
         ],
         "responses": {
@@ -1367,6 +2801,9 @@
               "Content-Length": {
                 "$ref": "#/components/headers/ContentLengthHeader"
               },
+              "Content-Disposition": {
+                "$ref": "#/components/headers/ContentDispositionHeader"
+              },
               "ETag": {
                 "$ref": "#/components/headers/ETagHeader"
               },
@@ -1375,6 +2812,9 @@
               },
               "X-Original-Filename": {
                 "$ref": "#/components/headers/OriginalFilenameHeader"
+              },
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -1386,6 +2826,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "401": {
@@ -1395,6 +2840,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -1406,6 +2856,26 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "请求超过限流阈值。错误代码：rate_limited。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "500": {
@@ -1415,6 +2885,26 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "共享限流后端不可用。错误代码：rate_limit_unavailable。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           }
@@ -1439,6 +2929,9 @@
           },
           {
             "$ref": "#/components/parameters/OriginalFilenameHeader"
+          },
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
           }
         ],
         "requestBody": {
@@ -1461,6 +2954,11 @@
                   "$ref": "#/components/schemas/ObjectEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "400": {
@@ -1470,6 +2968,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -1481,6 +2984,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "404": {
@@ -1490,6 +2998,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -1501,6 +3014,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "413": {
@@ -1511,6 +3029,26 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "请求超过限流阈值。错误代码：rate_limited。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "500": {
@@ -1520,6 +3058,26 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "共享限流后端不可用。错误代码：rate_limit_unavailable。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           }
@@ -1536,7 +3094,12 @@
         ],
         "responses": {
           "204": {
-            "description": "对象已删除。无响应正文。"
+            "description": "对象已删除。无响应正文。",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
           },
           "400": {
             "description": "存储桶名称或对象键无效。错误代码：invalid_bucket_name、invalid_object_key。",
@@ -1545,6 +3108,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -1556,6 +3124,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "404": {
@@ -1565,6 +3138,26 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "请求超过限流阈值。错误代码：rate_limited。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -1576,9 +3169,34 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "共享限流后端不可用。错误代码：rate_limit_unavailable。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       }
     },
     "/api/v1/buckets/{bucket}/objects/visibility/{key}": {
@@ -1618,6 +3236,11 @@
                   "$ref": "#/components/schemas/ObjectEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "400": {
@@ -1627,6 +3250,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -1638,6 +3266,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "404": {
@@ -1647,6 +3280,26 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "请求超过限流阈值。错误代码：rate_limited。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -1658,9 +3311,34 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "共享限流后端不可用。错误代码：rate_limit_unavailable。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       }
     },
     "/api/v1/recycle-bin/objects": {
@@ -1689,6 +3367,9 @@
           },
           {
             "$ref": "#/components/parameters/CursorQuery"
+          },
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
           }
         ],
         "responses": {
@@ -1697,8 +3378,13 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessEnvelope"
+                  "$ref": "#/components/schemas/RecycleBinListEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -1710,6 +3396,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "401": {
@@ -1720,6 +3411,26 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "请求超过限流阈值。错误代码：rate_limited。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "500": {
@@ -1729,6 +3440,26 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "共享限流后端不可用。错误代码：rate_limit_unavailable。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           }
@@ -1762,8 +3493,13 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessEnvelope"
+                  "$ref": "#/components/schemas/RecycleBinRestoreEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -1775,6 +3511,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "401": {
@@ -1785,9 +3526,64 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "请求超过限流阈值。错误代码：rate_limited。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "500": {
+            "description": "内部操作失败，错误代码取决于失败的子系统。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "共享限流后端不可用。错误代码：rate_limit_unavailable。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       }
     },
     "/api/v1/recycle-bin/objects/batch-delete": {
@@ -1817,8 +3613,13 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessEnvelope"
+                  "$ref": "#/components/schemas/RecycleBinDeleteEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -1830,6 +3631,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "401": {
@@ -1840,9 +3646,64 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "请求超过限流阈值。错误代码：rate_limited。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "500": {
+            "description": "内部操作失败，错误代码取决于失败的子系统。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "共享限流后端不可用。错误代码：rate_limit_unavailable。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       }
     },
     "/api/v1/sites": {
@@ -1864,6 +3725,11 @@
                   "$ref": "#/components/schemas/SiteListEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "401": {
@@ -1873,6 +3739,26 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "请求超过限流阈值。错误代码：rate_limited。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -1884,9 +3770,34 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "共享限流后端不可用。错误代码：rate_limit_unavailable。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       },
       "post": {
         "tags": ["站点"],
@@ -1917,6 +3828,11 @@
                   "$ref": "#/components/schemas/SiteEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "400": {
@@ -1926,6 +3842,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -1937,6 +3858,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "404": {
@@ -1946,6 +3872,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -1957,6 +3888,26 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "请求超过限流阈值。错误代码：rate_limited。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "500": {
@@ -1967,9 +3918,34 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "共享限流后端不可用。错误代码：rate_limit_unavailable。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       }
     },
     "/api/v1/sites/publish": {
@@ -1989,6 +3965,14 @@
             "multipart/form-data": {
               "schema": {
                 "$ref": "#/components/schemas/PublishSiteForm"
+              },
+              "encoding": {
+                "manifest": {
+                  "contentType": "application/json"
+                },
+                "domains": {
+                  "contentType": "application/json"
+                }
               }
             }
           }
@@ -2002,6 +3986,11 @@
                   "$ref": "#/components/schemas/PublishSiteEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "400": {
@@ -2011,6 +4000,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -2022,6 +4016,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "404": {
@@ -2031,6 +4030,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -2042,6 +4046,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "413": {
@@ -2051,6 +4060,26 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "请求超过限流阈值。错误代码：rate_limited。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -2062,9 +4091,34 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "共享限流后端不可用。错误代码：rate_limit_unavailable。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       }
     },
     "/api/v1/sites/publish/object": {
@@ -2126,6 +4180,11 @@
                   "$ref": "#/components/schemas/SiteEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "400": {
@@ -2135,6 +4194,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -2146,6 +4210,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "404": {
@@ -2155,6 +4224,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -2166,6 +4240,26 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "请求超过限流阈值。错误代码：rate_limited。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "500": {
@@ -2176,9 +4270,34 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "共享限流后端不可用。错误代码：rate_limit_unavailable。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       }
     },
     "/api/v1/sites/publish/file": {
@@ -2198,6 +4317,11 @@
             "multipart/form-data": {
               "schema": {
                 "$ref": "#/components/schemas/PublishSiteFileForm"
+              },
+              "encoding": {
+                "domains": {
+                  "contentType": "application/json"
+                }
               }
             }
           }
@@ -2211,6 +4335,11 @@
                   "$ref": "#/components/schemas/SiteEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "400": {
@@ -2220,6 +4349,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -2231,6 +4365,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "404": {
@@ -2240,6 +4379,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -2251,6 +4395,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "413": {
@@ -2260,6 +4409,26 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "请求超过限流阈值。错误代码：rate_limited。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -2271,9 +4440,34 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "共享限流后端不可用。错误代码：rate_limit_unavailable。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       }
     },
     "/api/v1/sites/{siteID}": {
@@ -2300,6 +4494,11 @@
                   "$ref": "#/components/schemas/SiteEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "400": {
@@ -2309,6 +4508,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -2320,6 +4524,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "404": {
@@ -2329,6 +4538,26 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "请求超过限流阈值。错误代码：rate_limited。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -2340,9 +4569,34 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "共享限流后端不可用。错误代码：rate_limit_unavailable。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       },
       "put": {
         "tags": ["站点"],
@@ -2373,6 +4627,11 @@
                   "$ref": "#/components/schemas/SiteEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "400": {
@@ -2382,6 +4641,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -2393,6 +4657,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "404": {
@@ -2402,6 +4671,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -2413,6 +4687,26 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "请求超过限流阈值。错误代码：rate_limited。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "500": {
@@ -2423,9 +4717,34 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "共享限流后端不可用。错误代码：rate_limit_unavailable。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       },
       "delete": {
         "tags": ["站点"],
@@ -2438,7 +4757,12 @@
         ],
         "responses": {
           "204": {
-            "description": "网站已删除。无响应正文。"
+            "description": "网站已删除。无响应正文。",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
           },
           "400": {
             "description": "siteID无效。错误代码： invalid_site_id。",
@@ -2447,6 +4771,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -2458,6 +4787,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "404": {
@@ -2467,6 +4801,26 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "请求超过限流阈值。错误代码：rate_limited。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -2478,9 +4832,34 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "共享限流后端不可用。错误代码：rate_limit_unavailable。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       }
     },
     "/api/v1/sign/download": {
@@ -2513,6 +4892,11 @@
                   "$ref": "#/components/schemas/SignedDownloadEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "400": {
@@ -2522,6 +4906,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -2533,9 +4922,64 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "请求超过限流阈值。错误代码：rate_limited。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "500": {
+            "description": "内部操作失败，错误代码取决于失败的子系统。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "共享限流后端不可用。错误代码：rate_limit_unavailable。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       }
     }
   },
@@ -2698,7 +5142,8 @@
         "description": "对象可见性。省略时默认为 `private`。",
         "schema": {
           "type": "string",
-          "enum": ["public", "private"]
+          "enum": ["public", "private"],
+          "default": "private"
         }
       },
       "AllowOverwriteHeader": {
@@ -2707,8 +5152,8 @@
         "required": false,
         "description": "是否允许覆盖同对象键的已存在对象。省略时默认为 `false`。",
         "schema": {
-          "type": "string",
-          "enum": ["true", "false"]
+          "type": "boolean",
+          "default": false
         }
       },
       "OriginalFilenameHeader": {
@@ -2738,6 +5183,47 @@
         "description": "用于私有对象签名下载的签名，需与 `expires` 一起使用。",
         "schema": {
           "type": "string"
+        }
+      },
+      "RequestIDHeader": {
+        "name": "X-Request-ID",
+        "in": "header",
+        "required": false,
+        "description": "调用方可选提供的关联 ID。服务器会在响应中原样返回；省略时由服务器生成。",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "DownloadQuery": {
+        "name": "download",
+        "in": "query",
+        "required": false,
+        "description": "为 true 时 Content-Disposition 使用 attachment，否则使用 inline。",
+        "schema": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "ExplorerSortByQuery": {
+        "name": "sort_by",
+        "in": "query",
+        "required": false,
+        "description": "资源管理器排序字段。",
+        "schema": {
+          "type": "string",
+          "enum": ["name", "size", "created_at"],
+          "default": "created_at"
+        }
+      },
+      "ExplorerSortOrderQuery": {
+        "name": "sort_order",
+        "in": "query",
+        "required": false,
+        "description": "资源管理器排序方向。",
+        "schema": {
+          "type": "string",
+          "enum": ["asc", "desc"],
+          "default": "desc"
         }
       }
     },
@@ -2774,6 +5260,18 @@
         "schema": {
           "type": "string"
         }
+      },
+      "RequestIDHeader": {
+        "description": "调用方提供或服务器生成的请求关联 ID。",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "ContentDispositionHeader": {
+        "description": "内容展示或下载方式。",
+        "schema": {
+          "type": "string"
+        }
       }
     },
     "schemas": {
@@ -2791,20 +5289,6 @@
               "format": "int64",
               "minimum": 1
             }
-          }
-        }
-      },
-      "SuccessEnvelope": {
-        "type": "object",
-        "required": ["request_id", "data"],
-        "properties": {
-          "request_id": {
-            "type": "string",
-            "description": "中间件返回的请求关联ID。"
-          },
-          "data": {
-            "type": "object",
-            "description": "接口特定的响应数据。"
           }
         }
       },
@@ -2908,12 +5392,13 @@
       },
       "FolderCreateRequest": {
         "type": "object",
-        "required": ["prefix", "name"],
+        "required": ["name"],
         "properties": {
           "prefix": {
             "type": "string",
             "maxLength": 512,
-            "description": "父文件夹前缀。对存储桶根目录使用空字符串。非空值必须以“/”结尾。"
+            "description": "父文件夹前缀。对存储桶根目录使用空字符串。非空值必须以“/”结尾。",
+            "default": ""
           },
           "name": {
             "type": "string",
@@ -3023,7 +5508,20 @@
       },
       "ExplorerEntry": {
         "type": "object",
-        "required": ["type", "path", "name"],
+        "required": [
+          "type",
+          "path",
+          "name",
+          "is_empty",
+          "object_key",
+          "original_filename",
+          "size",
+          "content_type",
+          "etag",
+          "visibility",
+          "created_at",
+          "updated_at"
+        ],
         "properties": {
           "type": {
             "type": "string",
@@ -3138,7 +5636,8 @@
                 "file_field": "file_1",
                 "relative_path": "assets/app.js"
               }
-            ]
+            ],
+            "minItems": 1
           }
         },
         "additionalProperties": {
@@ -3176,7 +5675,7 @@
       },
       "SignDownloadRequest": {
         "type": "object",
-        "required": ["bucket", "object_key", "expires_in_seconds"],
+        "required": ["bucket", "object_key"],
         "properties": {
           "bucket": {
             "type": "string",
@@ -3192,9 +5691,10 @@
           "expires_in_seconds": {
             "type": "integer",
             "format": "int64",
-            "minimum": 0,
-            "maximum": 86400,
-            "description": "以秒为单位的TTL。值< = 0使用当前环境中的服务器默认值。"
+            "minimum": 1,
+            "description": "可选的秒级 TTL。省略时使用 APP_DEFAULT_SIGNED_URL_TTL_SECONDS（默认 300）；超过 APP_MAX_SIGNED_URL_TTL_SECONDS（默认 86400）的值会被拒绝。",
+            "x-default-config": "APP_DEFAULT_SIGNED_URL_TTL_SECONDS",
+            "x-maximum-config": "APP_MAX_SIGNED_URL_TTL_SECONDS"
           }
         }
       },
@@ -3275,14 +5775,17 @@
             "description": "可选的父级目录前缀。前导斜杠会被移除，非空值会被标准化为以“/”结尾。"
           },
           "domains": {
-            "type": "string",
-            "description": "站点域名的 JSON 字符串数组，至少需要一个域名。",
-            "example": "[\"demo.localhost\"]"
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            },
+            "description": "以 JSON multipart 分段编码的站点域名数组。",
+            "example": ["demo.localhost"]
           },
           "enabled": {
-            "type": "string",
-            "enum": ["true", "false"],
-            "default": "true"
+            "type": "boolean",
+            "default": true
           },
           "index_document": {
             "type": "string",
@@ -3295,9 +5798,8 @@
             "default": ""
           },
           "spa_fallback": {
-            "type": "string",
-            "enum": ["true", "false"],
-            "default": "true"
+            "type": "boolean",
+            "default": true
           },
           "manifest": {
             "type": "array",
@@ -3315,7 +5817,8 @@
                 "file_field": "file_1",
                 "relative_path": "dist/assets/app.js"
               }
-            ]
+            ],
+            "minItems": 1
           }
         },
         "additionalProperties": {
@@ -3341,14 +5844,17 @@
             "description": "可选的父级目录前缀。前导斜杠会被移除，非空值会被标准化为以“/”结尾。"
           },
           "domains": {
-            "type": "string",
-            "description": "站点域名的 JSON 字符串数组，至少需要一个域名。",
-            "example": "[\"demo.localhost\"]"
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            },
+            "description": "以 JSON multipart 分段编码的站点域名数组。",
+            "example": ["demo.localhost"]
           },
           "enabled": {
-            "type": "string",
-            "enum": ["true", "false"],
-            "default": "true"
+            "type": "boolean",
+            "default": true
           },
           "error_document": {
             "type": "string",
@@ -3356,9 +5862,8 @@
             "default": ""
           },
           "spa_fallback": {
-            "type": "string",
-            "enum": ["true", "false"],
-            "default": "true"
+            "type": "boolean",
+            "default": true
           },
           "file": {
             "type": "string",
@@ -3450,15 +5955,12 @@
       "HealthzEnvelope": {
         "allOf": [
           {
-            "$ref": "#/components/schemas/SuccessEnvelope"
+            "$ref": "#/components/schemas/EnvelopeMetadata"
           },
           {
             "type": "object",
-            "required": ["request_id", "data"],
+            "required": ["data"],
             "properties": {
-              "request_id": {
-                "type": "string"
-              },
               "data": {
                 "$ref": "#/components/schemas/HealthzResult"
               }
@@ -3469,15 +5971,12 @@
       "BucketEnvelope": {
         "allOf": [
           {
-            "$ref": "#/components/schemas/SuccessEnvelope"
+            "$ref": "#/components/schemas/EnvelopeMetadata"
           },
           {
             "type": "object",
-            "required": ["request_id", "data"],
+            "required": ["data"],
             "properties": {
-              "request_id": {
-                "type": "string"
-              },
               "data": {
                 "$ref": "#/components/schemas/Bucket"
               }
@@ -3488,15 +5987,12 @@
       "BucketListEnvelope": {
         "allOf": [
           {
-            "$ref": "#/components/schemas/SuccessEnvelope"
+            "$ref": "#/components/schemas/EnvelopeMetadata"
           },
           {
             "type": "object",
-            "required": ["request_id", "data"],
+            "required": ["data"],
             "properties": {
-              "request_id": {
-                "type": "string"
-              },
               "data": {
                 "$ref": "#/components/schemas/BucketList"
               }
@@ -3507,15 +6003,12 @@
       "FolderNodeEnvelope": {
         "allOf": [
           {
-            "$ref": "#/components/schemas/SuccessEnvelope"
+            "$ref": "#/components/schemas/EnvelopeMetadata"
           },
           {
             "type": "object",
-            "required": ["request_id", "data"],
+            "required": ["data"],
             "properties": {
-              "request_id": {
-                "type": "string"
-              },
               "data": {
                 "$ref": "#/components/schemas/FolderNode"
               }
@@ -3526,15 +6019,12 @@
       "FolderNodeListEnvelope": {
         "allOf": [
           {
-            "$ref": "#/components/schemas/SuccessEnvelope"
+            "$ref": "#/components/schemas/EnvelopeMetadata"
           },
           {
             "type": "object",
-            "required": ["request_id", "data"],
+            "required": ["data"],
             "properties": {
-              "request_id": {
-                "type": "string"
-              },
               "data": {
                 "$ref": "#/components/schemas/FolderNodeList"
               }
@@ -3545,15 +6035,12 @@
       "ObjectEnvelope": {
         "allOf": [
           {
-            "$ref": "#/components/schemas/SuccessEnvelope"
+            "$ref": "#/components/schemas/EnvelopeMetadata"
           },
           {
             "type": "object",
-            "required": ["request_id", "data"],
+            "required": ["data"],
             "properties": {
-              "request_id": {
-                "type": "string"
-              },
               "data": {
                 "$ref": "#/components/schemas/Object"
               }
@@ -3564,15 +6051,12 @@
       "ObjectListEnvelope": {
         "allOf": [
           {
-            "$ref": "#/components/schemas/SuccessEnvelope"
+            "$ref": "#/components/schemas/EnvelopeMetadata"
           },
           {
             "type": "object",
-            "required": ["request_id", "data"],
+            "required": ["data"],
             "properties": {
-              "request_id": {
-                "type": "string"
-              },
               "data": {
                 "$ref": "#/components/schemas/ObjectList"
               }
@@ -3583,15 +6067,12 @@
       "ExplorerEntryListEnvelope": {
         "allOf": [
           {
-            "$ref": "#/components/schemas/SuccessEnvelope"
+            "$ref": "#/components/schemas/EnvelopeMetadata"
           },
           {
             "type": "object",
-            "required": ["request_id", "data"],
+            "required": ["data"],
             "properties": {
-              "request_id": {
-                "type": "string"
-              },
               "data": {
                 "$ref": "#/components/schemas/ExplorerEntryList"
               }
@@ -3602,15 +6083,12 @@
       "SiteEnvelope": {
         "allOf": [
           {
-            "$ref": "#/components/schemas/SuccessEnvelope"
+            "$ref": "#/components/schemas/EnvelopeMetadata"
           },
           {
             "type": "object",
-            "required": ["request_id", "data"],
+            "required": ["data"],
             "properties": {
-              "request_id": {
-                "type": "string"
-              },
               "data": {
                 "$ref": "#/components/schemas/Site"
               }
@@ -3621,15 +6099,12 @@
       "SiteListEnvelope": {
         "allOf": [
           {
-            "$ref": "#/components/schemas/SuccessEnvelope"
+            "$ref": "#/components/schemas/EnvelopeMetadata"
           },
           {
             "type": "object",
-            "required": ["request_id", "data"],
+            "required": ["data"],
             "properties": {
-              "request_id": {
-                "type": "string"
-              },
               "data": {
                 "$ref": "#/components/schemas/SiteList"
               }
@@ -3640,15 +6115,12 @@
       "PublishSiteEnvelope": {
         "allOf": [
           {
-            "$ref": "#/components/schemas/SuccessEnvelope"
+            "$ref": "#/components/schemas/EnvelopeMetadata"
           },
           {
             "type": "object",
-            "required": ["request_id", "data"],
+            "required": ["data"],
             "properties": {
-              "request_id": {
-                "type": "string"
-              },
               "data": {
                 "$ref": "#/components/schemas/PublishSiteResult"
               }
@@ -3659,15 +6131,12 @@
       "SignedDownloadEnvelope": {
         "allOf": [
           {
-            "$ref": "#/components/schemas/SuccessEnvelope"
+            "$ref": "#/components/schemas/EnvelopeMetadata"
           },
           {
             "type": "object",
-            "required": ["request_id", "data"],
+            "required": ["data"],
             "properties": {
-              "request_id": {
-                "type": "string"
-              },
               "data": {
                 "$ref": "#/components/schemas/SignedDownloadPathResult"
               }
@@ -3678,22 +6147,821 @@
       "UploadBatchEnvelope": {
         "allOf": [
           {
-            "$ref": "#/components/schemas/SuccessEnvelope"
+            "$ref": "#/components/schemas/EnvelopeMetadata"
           },
           {
             "type": "object",
-            "required": ["request_id", "data"],
+            "required": ["data"],
             "properties": {
-              "request_id": {
-                "type": "string"
-              },
               "data": {
                 "$ref": "#/components/schemas/UploadBatchResult"
               }
             }
           }
         ]
+      },
+      "EnvelopeMetadata": {
+        "type": "object",
+        "required": ["request_id"],
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "description": "中间件返回的请求关联 ID。"
+          }
+        }
+      },
+      "LivenessResult": {
+        "type": "object",
+        "required": ["status", "version"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["ok"]
+          },
+          "version": {
+            "type": "string"
+          }
+        }
+      },
+      "ReadinessResult": {
+        "type": "object",
+        "required": ["status", "version"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["ready"]
+          },
+          "version": {
+            "type": "string"
+          }
+        }
+      },
+      "RuntimeUploadMetrics": {
+        "type": "object",
+        "required": [
+          "staged",
+          "failed",
+          "bytes",
+          "staging_duration_ns",
+          "reservation_failures"
+        ],
+        "properties": {
+          "staged": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "failed": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "staging_duration_ns": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "reservation_failures": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "RuntimeTransactionMetrics": {
+        "type": "object",
+        "required": ["completed", "failed", "duration_ns"],
+        "properties": {
+          "completed": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "failed": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "duration_ns": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "RuntimeCleanupMetrics": {
+        "type": "object",
+        "required": ["completed", "failed", "backlog"],
+        "properties": {
+          "completed": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "failed": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "backlog": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "RuntimeQuotaMetrics": {
+        "type": "object",
+        "required": [
+          "used_bytes",
+          "reserved_bytes",
+          "max_bytes",
+          "remaining_bytes"
+        ],
+        "properties": {
+          "used_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "reserved_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "max_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "remaining_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "DatabasePoolMetrics": {
+        "type": "object",
+        "required": [
+          "max_open_connections",
+          "open_connections",
+          "in_use",
+          "idle",
+          "wait_count",
+          "wait_duration_ns",
+          "max_idle_closed",
+          "max_idle_time_closed",
+          "max_lifetime_closed"
+        ],
+        "properties": {
+          "max_open_connections": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "open_connections": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "in_use": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "idle": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "wait_count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "wait_duration_ns": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "max_idle_closed": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "max_idle_time_closed": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "max_lifetime_closed": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "RateLimiterMetrics": {
+        "type": "object",
+        "required": [
+          "backend",
+          "entries",
+          "max_entries",
+          "expired_evictions",
+          "capacity_evictions",
+          "capacity_rejections",
+          "rejected_requests",
+          "store_errors"
+        ],
+        "properties": {
+          "backend": {
+            "type": "string",
+            "enum": ["local", "mysql"]
+          },
+          "entries": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "max_entries": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "expired_evictions": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "capacity_evictions": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "capacity_rejections": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "rejected_requests": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "store_errors": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "RateLimitMetrics": {
+        "type": "object",
+        "required": ["ip", "public", "management", "upload", "sign", "health"],
+        "properties": {
+          "ip": {
+            "$ref": "#/components/schemas/RateLimiterMetrics"
+          },
+          "public": {
+            "$ref": "#/components/schemas/RateLimiterMetrics"
+          },
+          "management": {
+            "$ref": "#/components/schemas/RateLimiterMetrics"
+          },
+          "upload": {
+            "$ref": "#/components/schemas/RateLimiterMetrics"
+          },
+          "sign": {
+            "$ref": "#/components/schemas/RateLimiterMetrics"
+          },
+          "health": {
+            "$ref": "#/components/schemas/RateLimiterMetrics"
+          }
+        }
+      },
+      "SystemMetricsResult": {
+        "type": "object",
+        "required": [
+          "uploads",
+          "transactions",
+          "cleanup",
+          "quota",
+          "database",
+          "rate_limit"
+        ],
+        "properties": {
+          "uploads": {
+            "$ref": "#/components/schemas/RuntimeUploadMetrics"
+          },
+          "transactions": {
+            "$ref": "#/components/schemas/RuntimeTransactionMetrics"
+          },
+          "cleanup": {
+            "$ref": "#/components/schemas/RuntimeCleanupMetrics"
+          },
+          "quota": {
+            "$ref": "#/components/schemas/RuntimeQuotaMetrics"
+          },
+          "database": {
+            "$ref": "#/components/schemas/DatabasePoolMetrics"
+          },
+          "rate_limit": {
+            "$ref": "#/components/schemas/RateLimitMetrics"
+          }
+        }
+      },
+      "SystemCPU": {
+        "type": "object",
+        "required": ["used_percent"],
+        "properties": {
+          "used_percent": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "SystemMemory": {
+        "type": "object",
+        "required": [
+          "total_bytes",
+          "used_bytes",
+          "available_bytes",
+          "used_percent"
+        ],
+        "properties": {
+          "total_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "used_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "available_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "used_percent": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "SystemDisk": {
+        "type": "object",
+        "required": [
+          "label",
+          "mount_point",
+          "filesystem",
+          "total_bytes",
+          "used_bytes",
+          "free_bytes",
+          "used_percent",
+          "contains_storage_root"
+        ],
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "mount_point": {
+            "type": "string"
+          },
+          "filesystem": {
+            "type": "string"
+          },
+          "total_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "used_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "free_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "used_percent": {
+            "type": "number",
+            "format": "double"
+          },
+          "contains_storage_root": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SystemStorage": {
+        "type": "object",
+        "required": [
+          "root_path",
+          "used_bytes",
+          "max_bytes",
+          "remaining_bytes",
+          "used_percent",
+          "limit_status"
+        ],
+        "properties": {
+          "root_path": {
+            "type": "string"
+          },
+          "used_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "max_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "remaining_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "used_percent": {
+            "type": "number",
+            "format": "double"
+          },
+          "limit_status": {
+            "type": "string",
+            "enum": ["ok", "warning", "exceeded"]
+          }
+        }
+      },
+      "SystemStatsResult": {
+        "type": "object",
+        "required": ["os", "cpu", "memory", "disks", "storage"],
+        "properties": {
+          "os": {
+            "type": "string"
+          },
+          "cpu": {
+            "$ref": "#/components/schemas/SystemCPU"
+          },
+          "memory": {
+            "$ref": "#/components/schemas/SystemMemory"
+          },
+          "disks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SystemDisk"
+            }
+          },
+          "storage": {
+            "$ref": "#/components/schemas/SystemStorage"
+          }
+        }
+      },
+      "ExplorerBatchDeleteFailedItem": {
+        "type": "object",
+        "required": ["type", "path", "code", "message"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["file", "directory"]
+          },
+          "path": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ExplorerBatchDeleteResult": {
+        "type": "object",
+        "required": ["deleted_count", "failed_count", "failed_items"],
+        "properties": {
+          "deleted_count": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "failed_count": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "failed_items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExplorerBatchDeleteFailedItem"
+            }
+          }
+        }
+      },
+      "RecycleBinObject": {
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "bucket_name",
+          "path",
+          "name",
+          "object_key",
+          "original_filename",
+          "size",
+          "content_type",
+          "etag",
+          "visibility",
+          "created_at",
+          "deleted_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "type": {
+            "type": "string",
+            "enum": ["file", "directory"]
+          },
+          "bucket_name": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "object_key": {
+            "type": "string"
+          },
+          "original_filename": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "content_type": {
+            "type": "string"
+          },
+          "etag": {
+            "type": "string"
+          },
+          "visibility": {
+            "type": "string",
+            "enum": ["public", "private"]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "deleted_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RecycleBinList": {
+        "type": "object",
+        "required": ["items", "next_cursor"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecycleBinObject"
+            }
+          },
+          "next_cursor": {
+            "type": "string"
+          }
+        }
+      },
+      "RecycleBinFailedItem": {
+        "type": "object",
+        "required": ["id", "bucket_name", "path", "code", "message"],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "bucket_name": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "RecycleBinRestoreResult": {
+        "type": "object",
+        "required": ["restored_count", "failed_count", "failed_items"],
+        "properties": {
+          "restored_count": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "failed_count": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "failed_items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecycleBinFailedItem"
+            }
+          }
+        }
+      },
+      "RecycleBinDeleteResult": {
+        "type": "object",
+        "required": ["deleted_count", "failed_count", "failed_items"],
+        "properties": {
+          "deleted_count": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "failed_count": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "failed_items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecycleBinFailedItem"
+            }
+          }
+        }
+      },
+      "LivenessEnvelope": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/EnvelopeMetadata"
+          },
+          {
+            "type": "object",
+            "required": ["data"],
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/LivenessResult"
+              }
+            }
+          }
+        ]
+      },
+      "ReadinessEnvelope": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/EnvelopeMetadata"
+          },
+          {
+            "type": "object",
+            "required": ["data"],
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/ReadinessResult"
+              }
+            }
+          }
+        ]
+      },
+      "SystemMetricsEnvelope": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/EnvelopeMetadata"
+          },
+          {
+            "type": "object",
+            "required": ["data"],
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/SystemMetricsResult"
+              }
+            }
+          }
+        ]
+      },
+      "SystemStatsEnvelope": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/EnvelopeMetadata"
+          },
+          {
+            "type": "object",
+            "required": ["data"],
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/SystemStatsResult"
+              }
+            }
+          }
+        ]
+      },
+      "StorageQuotaEnvelope": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/EnvelopeMetadata"
+          },
+          {
+            "type": "object",
+            "required": ["data"],
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/SystemStorage"
+              }
+            }
+          }
+        ]
+      },
+      "ExplorerBatchDeleteEnvelope": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/EnvelopeMetadata"
+          },
+          {
+            "type": "object",
+            "required": ["data"],
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/ExplorerBatchDeleteResult"
+              }
+            }
+          }
+        ]
+      },
+      "RecycleBinListEnvelope": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/EnvelopeMetadata"
+          },
+          {
+            "type": "object",
+            "required": ["data"],
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/RecycleBinList"
+              }
+            }
+          }
+        ]
+      },
+      "RecycleBinRestoreEnvelope": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/EnvelopeMetadata"
+          },
+          {
+            "type": "object",
+            "required": ["data"],
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/RecycleBinRestoreResult"
+              }
+            }
+          }
+        ]
+      },
+      "RecycleBinDeleteEnvelope": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/EnvelopeMetadata"
+          },
+          {
+            "type": "object",
+            "required": ["data"],
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/RecycleBinDeleteResult"
+              }
+            }
+          }
+        ]
       }
     }
+  },
+  "x-light-oss-host-routing": {
+    "description": "站点绑定域名由 Gin 的 NoRoute 处理，因此不能表示为普通 OpenAPI 路径。已绑定的 Host 可对任意路径使用 GET 和 HEAD。根路径和目录路径解析到配置的索引文档；SPA 回退以 200 返回索引文档；配置错误文档时以 404 返回该文档。该路由受公共限流和全局限流约束。",
+    "methods": ["GET", "HEAD"],
+    "gin_path": "/*path",
+    "host": "bound-enabled-site-domain",
+    "response_statuses": [200, 404, 429, 500, 503]
   }
 }

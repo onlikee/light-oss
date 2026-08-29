@@ -3,7 +3,6 @@ package handler
 import (
 	"mime"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -128,7 +127,16 @@ func (h *apiHandler) downloadFolderArchive(c *gin.Context) {
 }
 
 func (h *apiHandler) listExplorerEntries(c *gin.Context) {
-	limit, _ := strconv.Atoi(c.Query("limit"))
+	rawLimit, limitProvided := c.GetQuery("limit")
+	limit, err := parseOptionalIntQuery(rawLimit, limitProvided)
+	if err != nil {
+		response.Error(c, apperrors.New(http.StatusBadRequest, "invalid_request", "limit must be an integer"))
+		return
+	}
+	if limitProvided && (limit < 1 || limit > 200) {
+		response.Error(c, apperrors.New(http.StatusBadRequest, "invalid_request", "limit must be between 1 and 200"))
+		return
+	}
 	result, err := h.objectService.ListExplorerEntries(c.Request.Context(), service.ListExplorerEntriesInput{
 		BucketName: c.Param("bucket"),
 		Prefix:     c.Query("prefix"),

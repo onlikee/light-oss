@@ -118,15 +118,21 @@ func (s *ObjectService) ListExplorerEntries(ctx context.Context, input ListExplo
 	}
 
 	limit := input.Limit
-	if limit <= 0 {
+	if limit == 0 {
 		limit = defaultExplorerLimit
 	}
-	if limit > maxExplorerLimit {
-		limit = maxExplorerLimit
+	if limit < 1 || limit > maxExplorerLimit {
+		return nil, apperrors.New(400, "invalid_request", "limit must be between 1 and 200")
 	}
 
-	sortBy := normalizeExplorerSortBy(input.SortBy)
-	sortOrder := normalizeExplorerSortOrder(input.SortOrder)
+	sortBy, err := normalizeExplorerSortBy(input.SortBy)
+	if err != nil {
+		return nil, apperrors.New(400, "invalid_request", "sort_by must be name, size, or created_at")
+	}
+	sortOrder, err := normalizeExplorerSortOrder(input.SortOrder)
+	if err != nil {
+		return nil, apperrors.New(400, "invalid_request", "sort_order must be asc or desc")
+	}
 
 	cursor, err := decodeExplorerCursor(input.Cursor)
 	if err != nil {

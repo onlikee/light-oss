@@ -15,6 +15,10 @@ import (
 func (h *apiHandler) publishSiteFile(c *gin.Context) {
 	fileHeader, err := c.FormFile("file")
 	if err != nil {
+		if isRequestBodyTooLarge(err) {
+			response.Error(c, apperrors.New(http.StatusRequestEntityTooLarge, "payload_too_large", "request body exceeds configured upload size"))
+			return
+		}
 		response.Error(c, apperrors.New(http.StatusBadRequest, "invalid_request", "file is required"))
 		return
 	}

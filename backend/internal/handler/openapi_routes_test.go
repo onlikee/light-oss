@@ -1,11 +1,13 @@
 package handler_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strings"
 	"testing"
@@ -44,8 +46,15 @@ func TestOpenAPISpecsMatchRegisteredRoutes(t *testing.T) {
 			}
 			assertOpenAPIRouteSecurity(t, specPath, gotRoutes)
 			assertOpenAPIManifestLimits(t, specPath)
+			assertOpenAPICompleteness(t, specPath)
 		})
 	}
+
+	assertOpenAPISpecsStructurallyEquivalent(
+		t,
+		filepath.Join("..", "..", "docs", "openapi.apifox.json"),
+		filepath.Join("..", "..", "docs", "openapi.apifox.cn.json"),
+	)
 }
 
 func assertOpenAPIManifestLimits(t *testing.T, path string) {
@@ -60,6 +69,7 @@ func assertOpenAPIManifestLimits(t *testing.T, path string) {
 			Schemas map[string]struct {
 				Properties map[string]struct {
 					Type     string `json:"type"`
+					MinItems int    `json:"minItems"`
 					MaxItems int    `json:"maxItems"`
 					Items    struct {
 						Ref string `json:"$ref"`
@@ -76,6 +86,9 @@ func assertOpenAPIManifestLimits(t *testing.T, path string) {
 		manifest := document.Components.Schemas[schemaName].Properties["manifest"]
 		if manifest.Type != "array" {
 			t.Errorf("OpenAPI schema %s manifest type = %q, want array", schemaName, manifest.Type)
+		}
+		if manifest.MinItems != 1 {
+			t.Errorf("OpenAPI schema %s manifest minItems = %d, want 1", schemaName, manifest.MinItems)
 		}
 		if manifest.MaxItems != 2000 {
 			t.Errorf("OpenAPI schema %s manifest maxItems = %d, want 2000", schemaName, manifest.MaxItems)
@@ -242,4 +255,261 @@ func formatOpenAPIRoutes(routes []openAPIRouteKey) string {
 		lines = append(lines, fmt.Sprintf("  %s %s", route.Method, route.Path))
 	}
 	return strings.Join(lines, "\n")
+}
+
+func assertOpenAPICompleteness(t *testing.T, path string) {
+	t.Helper()
+
+	document, raw := loadOpenAPIDocument(t, path)
+	if bytes.Contains(raw, []byte("#/components/schemas/SuccessEnvelope")) {
+		t.Errorf("OpenAPI spec %s still references the untyped SuccessEnvelope", path)
+	}
+	assertOpenAPIRefsResolve(t, path, document)
+
+	paths := mustJSONObject(t, document["paths"], "paths")
+	for pathName, pathValue := range paths {
+		pathItem := mustJSONObject(t, pathValue, "paths."+pathName)
+		for method, operationValue := range pathItem {
+			if !isOpenAPIOperationMethod(strings.ToUpper(method)) {
+				continue
+			}
+			operation := mustJSONObject(t, operationValue, method+" "+pathName)
+			operationID, _ := operation["operationId"].(string)
+			location := strings.ToUpper(method) + " " + pathName + " (" + operationID + ")"
+
+			if !containsRef(operation["parameters"], "#/components/parameters/RequestIDHeader") {
+				t.Errorf("%s does not declare the X-Request-ID request header", location)
+			}
+
+			responses := mustJSONObject(t, operation["responses"], location+" responses")
+			for status, responseValue := range responses {
+				response := mustJSONObject(t, responseValue, location+" response "+status)
+				headers, _ := response["headers"].(map[string]any)
+				if headers == nil || headers["X-Request-ID"] == nil {
+					t.Errorf("%s response %s does not declare X-Request-ID", location, status)
+				}
+			}
+
+			if operationID != "getLiveness" {
+				for _, status := range []string{"429", "503"} {
+					if responses[status] == nil {
+						t.Errorf("%s does not declare response %s", location, status)
+					}
+				}
+			}
+
+			route := openAPIRouteKey{Method: strings.ToUpper(method), Path: pathName}
+			if !isPublicOpenAPIRoute(route) {
+				for _, status := range []string{"401", "500"} {
+					if responses[status] == nil {
+						t.Errorf("authenticated %s does not declare response %s", location, status)
+					}
+				}
+			}
+		}
+	}
+
+	for _, operationID := range []string{"uploadObject", "uploadObjectBatch", "publishSiteUpload", "publishSiteFile"} {
+		operation := findOpenAPIOperation(t, document, operationID)
+		responses := mustJSONObject(t, operation["responses"], operationID+" responses")
+		if responses["413"] == nil {
+			t.Errorf("upload operation %s does not declare response 413", operationID)
+		}
+	}
+
+	expectedSuccessSchemas := map[string]string{
+		"getLiveness":                "LivenessEnvelope",
+		"getReadiness":               "ReadinessEnvelope",
+		"getSystemMetrics":           "SystemMetricsEnvelope",
+		"getSystemStats":             "SystemStatsEnvelope",
+		"updateSystemStorageQuota":   "StorageQuotaEnvelope",
+		"deleteExplorerEntriesBatch": "ExplorerBatchDeleteEnvelope",
+		"listRecycleBinObjects":      "RecycleBinListEnvelope",
+		"restoreRecycleBinObjects":   "RecycleBinRestoreEnvelope",
+		"deleteRecycleBinObjects":    "RecycleBinDeleteEnvelope",
+	}
+	for operationID, schemaName := range expectedSuccessSchemas {
+		operation := findOpenAPIOperation(t, document, operationID)
+		responses := mustJSONObject(t, operation["responses"], operationID+" responses")
+		if !containsRef(responses, "#/components/schemas/"+schemaName) {
+			t.Errorf("operation %s does not use concrete response schema %s", operationID, schemaName)
+		}
+	}
+
+	assertMultipartJSONEncoding(t, document, "uploadObjectBatch", "manifest")
+	assertMultipartJSONEncoding(t, document, "publishSiteUpload", "manifest", "domains")
+	assertMultipartJSONEncoding(t, document, "publishSiteFile", "domains")
+
+	hostRouting := mustJSONObject(t, document["x-light-oss-host-routing"], "x-light-oss-host-routing")
+	if !reflect.DeepEqual(hostRouting["methods"], []any{"GET", "HEAD"}) {
+		t.Errorf("OpenAPI spec %s host routing methods = %#v, want GET and HEAD", path, hostRouting["methods"])
+	}
+	if !reflect.DeepEqual(hostRouting["response_statuses"], []any{float64(200), float64(404), float64(429), float64(500), float64(503)}) {
+		t.Errorf("OpenAPI spec %s host routing statuses = %#v", path, hostRouting["response_statuses"])
+	}
+}
+
+func assertMultipartJSONEncoding(t *testing.T, document map[string]any, operationID string, fields ...string) {
+	t.Helper()
+	operation := findOpenAPIOperation(t, document, operationID)
+	requestBody := mustJSONObject(t, operation["requestBody"], operationID+" requestBody")
+	content := mustJSONObject(t, requestBody["content"], operationID+" request content")
+	multipart := mustJSONObject(t, content["multipart/form-data"], operationID+" multipart/form-data")
+	encoding := mustJSONObject(t, multipart["encoding"], operationID+" multipart encoding")
+	for _, field := range fields {
+		fieldEncoding := mustJSONObject(t, encoding[field], operationID+" encoding "+field)
+		if fieldEncoding["contentType"] != "application/json" {
+			t.Errorf("operation %s multipart field %s contentType = %#v, want application/json", operationID, field, fieldEncoding["contentType"])
+		}
+	}
+}
+
+func assertOpenAPIRefsResolve(t *testing.T, path string, document map[string]any) {
+	t.Helper()
+	var visit func(any)
+	visit = func(value any) {
+		switch typed := value.(type) {
+		case map[string]any:
+			if ref, ok := typed["$ref"].(string); ok {
+				if !strings.HasPrefix(ref, "#/") {
+					t.Errorf("OpenAPI spec %s contains unsupported external ref %q", path, ref)
+				} else if _, ok := resolveJSONPointer(document, ref); !ok {
+					t.Errorf("OpenAPI spec %s contains unresolved ref %q", path, ref)
+				}
+			}
+			for _, child := range typed {
+				visit(child)
+			}
+		case []any:
+			for _, child := range typed {
+				visit(child)
+			}
+		}
+	}
+	visit(document)
+}
+
+func resolveJSONPointer(document map[string]any, ref string) (any, bool) {
+	var current any = document
+	for _, token := range strings.Split(strings.TrimPrefix(ref, "#/"), "/") {
+		token = strings.ReplaceAll(strings.ReplaceAll(token, "~1", "/"), "~0", "~")
+		object, ok := current.(map[string]any)
+		if !ok {
+			return nil, false
+		}
+		current, ok = object[token]
+		if !ok {
+			return nil, false
+		}
+	}
+	return current, true
+}
+
+func containsRef(value any, expected string) bool {
+	switch typed := value.(type) {
+	case map[string]any:
+		if typed["$ref"] == expected {
+			return true
+		}
+		for _, child := range typed {
+			if containsRef(child, expected) {
+				return true
+			}
+		}
+	case []any:
+		for _, child := range typed {
+			if containsRef(child, expected) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func findOpenAPIOperation(t *testing.T, document map[string]any, operationID string) map[string]any {
+	t.Helper()
+	paths := mustJSONObject(t, document["paths"], "paths")
+	for pathName, pathValue := range paths {
+		pathItem := mustJSONObject(t, pathValue, "paths."+pathName)
+		for method, operationValue := range pathItem {
+			if !isOpenAPIOperationMethod(strings.ToUpper(method)) {
+				continue
+			}
+			operation := mustJSONObject(t, operationValue, method+" "+pathName)
+			if operation["operationId"] == operationID {
+				return operation
+			}
+		}
+	}
+	t.Fatalf("OpenAPI operationId %q was not found", operationID)
+	return nil
+}
+
+func mustJSONObject(t *testing.T, value any, location string) map[string]any {
+	t.Helper()
+	object, ok := value.(map[string]any)
+	if !ok {
+		t.Fatalf("OpenAPI value %s is %T, want object", location, value)
+	}
+	return object
+}
+
+func loadOpenAPIDocument(t *testing.T, path string) (map[string]any, []byte) {
+	t.Helper()
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read OpenAPI spec %s: %v", path, err)
+	}
+	var document map[string]any
+	if err := json.Unmarshal(raw, &document); err != nil {
+		t.Fatalf("parse OpenAPI spec %s: %v", path, err)
+	}
+	return document, raw
+}
+
+func assertOpenAPISpecsStructurallyEquivalent(t *testing.T, englishPath string, chinesePath string) {
+	t.Helper()
+	english, _ := loadOpenAPIDocument(t, englishPath)
+	chinese, _ := loadOpenAPIDocument(t, chinesePath)
+
+	normalizeOpenAPILocalization(english)
+	normalizeOpenAPILocalization(chinese)
+	if !reflect.DeepEqual(english, chinese) {
+		englishJSON, _ := json.MarshalIndent(english, "", "  ")
+		chineseJSON, _ := json.MarshalIndent(chinese, "", "  ")
+		t.Fatalf(
+			"English and Chinese OpenAPI specs differ outside localized text\nEnglish normalized:\n%s\nChinese normalized:\n%s",
+			englishJSON,
+			chineseJSON,
+		)
+	}
+}
+
+func normalizeOpenAPILocalization(value any) {
+	localizedKeys := map[string]struct{}{
+		"description": {},
+		"example":     {},
+		"examples":    {},
+		"summary":     {},
+		"tags":        {},
+		"title":       {},
+	}
+	var visit func(any)
+	visit = func(current any) {
+		switch typed := current.(type) {
+		case map[string]any:
+			for key, child := range typed {
+				if _, localized := localizedKeys[key]; localized {
+					delete(typed, key)
+					continue
+				}
+				visit(child)
+			}
+		case []any:
+			for _, child := range typed {
+				visit(child)
+			}
+		}
+	}
+	visit(value)
 }

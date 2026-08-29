@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"mime"
 	"net/http"
 	"net/url"
@@ -144,15 +145,31 @@ func normalizeObjectKey(raw string) string {
 }
 
 func parseOptionalBool(raw string) (bool, error) {
-	if strings.TrimSpace(raw) == "" {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
 		return false, nil
 	}
 
-	return strconv.ParseBool(raw)
+	switch trimmed {
+	case "true":
+		return true, nil
+	case "false":
+		return false, nil
+	default:
+		return false, errors.New("value must be true or false")
+	}
 }
 
 func parseOptionalBoolQuery(raw string) (bool, error) {
 	return parseOptionalBool(raw)
+}
+
+func parseOptionalIntQuery(raw string, provided bool) (int, error) {
+	if !provided {
+		return 0, nil
+	}
+
+	return strconv.Atoi(strings.TrimSpace(raw))
 }
 
 func setObjectHeaders(c *gin.Context, object *model.Object, forceDownload bool) {

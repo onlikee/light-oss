@@ -54,12 +54,22 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessEnvelope"
+                  "$ref": "#/components/schemas/LivenessEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       }
     },
     "/readyz": {
@@ -74,8 +84,28 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessEnvelope"
+                  "$ref": "#/components/schemas/ReadinessEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "A request rate limit was exceeded. Error code: rate_limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -87,9 +117,19 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       }
     },
     "/sites/{siteID}": {
@@ -113,8 +153,20 @@
               "Content-Length": {
                 "$ref": "#/components/headers/ContentLengthHeader"
               },
+              "Content-Disposition": {
+                "$ref": "#/components/headers/ContentDispositionHeader"
+              },
               "ETag": {
                 "$ref": "#/components/headers/ETagHeader"
+              },
+              "X-Object-Visibility": {
+                "$ref": "#/components/headers/ObjectVisibilityHeader"
+              },
+              "X-Original-Filename": {
+                "$ref": "#/components/headers/OriginalFilenameHeader"
+              },
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             },
             "content": {
@@ -127,12 +179,98 @@
             }
           },
           "400": {
-            "description": "The site identifier is invalid. No response body."
+            "description": "The site identifier is invalid. No response body.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
           },
           "404": {
-            "description": "The site or requested content was not found. A configured error document may be streamed with this status."
+            "description": "The site or requested content was not found. A configured error document may be streamed with this status.",
+            "headers": {
+              "Content-Type": {
+                "$ref": "#/components/headers/ContentTypeHeader"
+              },
+              "Content-Length": {
+                "$ref": "#/components/headers/ContentLengthHeader"
+              },
+              "Content-Disposition": {
+                "$ref": "#/components/headers/ContentDispositionHeader"
+              },
+              "ETag": {
+                "$ref": "#/components/headers/ETagHeader"
+              },
+              "X-Object-Visibility": {
+                "$ref": "#/components/headers/ObjectVisibilityHeader"
+              },
+              "X-Original-Filename": {
+                "$ref": "#/components/headers/OriginalFilenameHeader"
+              },
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            },
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "A request rate limit was exceeded. Error code: rate_limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "500": {
+            "description": "An internal operation failed. Error code depends on the failed subsystem.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "The shared rate-limit backend is unavailable. Error code: rate_limit_unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       },
       "head": {
         "tags": ["Sites"],
@@ -149,18 +287,108 @@
               "Content-Length": {
                 "$ref": "#/components/headers/ContentLengthHeader"
               },
+              "Content-Disposition": {
+                "$ref": "#/components/headers/ContentDispositionHeader"
+              },
               "ETag": {
                 "$ref": "#/components/headers/ETagHeader"
+              },
+              "X-Object-Visibility": {
+                "$ref": "#/components/headers/ObjectVisibilityHeader"
+              },
+              "X-Original-Filename": {
+                "$ref": "#/components/headers/OriginalFilenameHeader"
+              },
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
           "400": {
-            "description": "The site identifier is invalid. No response body."
+            "description": "The site identifier is invalid. No response body.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
           },
           "404": {
-            "description": "The site or requested content was not found. No response body."
+            "description": "The site or requested content was not found. HEAD has no response body; when an error document is configured, its representation headers are returned.",
+            "headers": {
+              "Content-Type": {
+                "$ref": "#/components/headers/ContentTypeHeader"
+              },
+              "Content-Length": {
+                "$ref": "#/components/headers/ContentLengthHeader"
+              },
+              "Content-Disposition": {
+                "$ref": "#/components/headers/ContentDispositionHeader"
+              },
+              "ETag": {
+                "$ref": "#/components/headers/ETagHeader"
+              },
+              "X-Object-Visibility": {
+                "$ref": "#/components/headers/ObjectVisibilityHeader"
+              },
+              "X-Original-Filename": {
+                "$ref": "#/components/headers/OriginalFilenameHeader"
+              },
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "A request rate limit was exceeded. Error code: rate_limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "500": {
+            "description": "An internal operation failed. Error code depends on the failed subsystem.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "The shared rate-limit backend is unavailable. Error code: rate_limit_unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       }
     },
     "/sites/{siteID}/{path}": {
@@ -187,8 +415,20 @@
               "Content-Length": {
                 "$ref": "#/components/headers/ContentLengthHeader"
               },
+              "Content-Disposition": {
+                "$ref": "#/components/headers/ContentDispositionHeader"
+              },
               "ETag": {
                 "$ref": "#/components/headers/ETagHeader"
+              },
+              "X-Object-Visibility": {
+                "$ref": "#/components/headers/ObjectVisibilityHeader"
+              },
+              "X-Original-Filename": {
+                "$ref": "#/components/headers/OriginalFilenameHeader"
+              },
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             },
             "content": {
@@ -201,12 +441,98 @@
             }
           },
           "400": {
-            "description": "The site identifier or content path is invalid. No response body."
+            "description": "The site identifier or content path is invalid. No response body.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
           },
           "404": {
-            "description": "The site or requested content was not found. A configured fallback or error document may be streamed with this status."
+            "description": "The site or requested content was not found. A configured fallback or error document may be streamed with this status.",
+            "headers": {
+              "Content-Type": {
+                "$ref": "#/components/headers/ContentTypeHeader"
+              },
+              "Content-Length": {
+                "$ref": "#/components/headers/ContentLengthHeader"
+              },
+              "Content-Disposition": {
+                "$ref": "#/components/headers/ContentDispositionHeader"
+              },
+              "ETag": {
+                "$ref": "#/components/headers/ETagHeader"
+              },
+              "X-Object-Visibility": {
+                "$ref": "#/components/headers/ObjectVisibilityHeader"
+              },
+              "X-Original-Filename": {
+                "$ref": "#/components/headers/OriginalFilenameHeader"
+              },
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            },
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "A request rate limit was exceeded. Error code: rate_limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "500": {
+            "description": "An internal operation failed. Error code depends on the failed subsystem.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "The shared rate-limit backend is unavailable. Error code: rate_limit_unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       },
       "head": {
         "tags": ["Sites"],
@@ -223,18 +549,108 @@
               "Content-Length": {
                 "$ref": "#/components/headers/ContentLengthHeader"
               },
+              "Content-Disposition": {
+                "$ref": "#/components/headers/ContentDispositionHeader"
+              },
               "ETag": {
                 "$ref": "#/components/headers/ETagHeader"
+              },
+              "X-Object-Visibility": {
+                "$ref": "#/components/headers/ObjectVisibilityHeader"
+              },
+              "X-Original-Filename": {
+                "$ref": "#/components/headers/OriginalFilenameHeader"
+              },
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
           "400": {
-            "description": "The site identifier or content path is invalid. No response body."
+            "description": "The site identifier or content path is invalid. No response body.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
           },
           "404": {
-            "description": "The site or requested content was not found. No response body."
+            "description": "The site or requested content was not found. HEAD has no response body; when an error document is configured, its representation headers are returned.",
+            "headers": {
+              "Content-Type": {
+                "$ref": "#/components/headers/ContentTypeHeader"
+              },
+              "Content-Length": {
+                "$ref": "#/components/headers/ContentLengthHeader"
+              },
+              "Content-Disposition": {
+                "$ref": "#/components/headers/ContentDispositionHeader"
+              },
+              "ETag": {
+                "$ref": "#/components/headers/ETagHeader"
+              },
+              "X-Object-Visibility": {
+                "$ref": "#/components/headers/ObjectVisibilityHeader"
+              },
+              "X-Original-Filename": {
+                "$ref": "#/components/headers/OriginalFilenameHeader"
+              },
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "A request rate limit was exceeded. Error code: rate_limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "500": {
+            "description": "An internal operation failed. Error code depends on the failed subsystem.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "The shared rate-limit backend is unavailable. Error code: rate_limit_unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       }
     },
     "/api/v1/healthz": {
@@ -257,6 +673,11 @@
                   "$ref": "#/components/schemas/HealthzEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "401": {
@@ -267,19 +688,71 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
-          "503": {
-            "description": "Service is up but the database check degraded. The body keeps the normal success envelope.",
+          "429": {
+            "description": "A request rate limit was exceeded. Error code: rate_limited.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HealthzEnvelope"
+                  "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "500": {
+            "description": "An internal operation failed. Error code depends on the failed subsystem.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "The database health check is degraded (HealthzEnvelope), or the shared rate-limit backend is unavailable (ErrorEnvelope).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/HealthzEnvelope"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ErrorEnvelope"
+                    }
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       }
     },
     "/api/v1/system/metrics": {
@@ -299,8 +772,13 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessEnvelope"
+                  "$ref": "#/components/schemas/SystemMetricsEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -312,9 +790,64 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "A request rate limit was exceeded. Error code: rate_limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "500": {
+            "description": "An internal operation failed. Error code depends on the failed subsystem.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "The shared rate-limit backend is unavailable. Error code: rate_limit_unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       }
     },
     "/api/v1/system/stats": {
@@ -334,8 +867,13 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessEnvelope"
+                  "$ref": "#/components/schemas/SystemStatsEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -347,6 +885,26 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "A request rate limit was exceeded. Error code: rate_limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "500": {
@@ -357,9 +915,34 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "The shared rate-limit backend is unavailable. Error code: rate_limit_unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       }
     },
     "/api/v1/system/storage/quota": {
@@ -397,8 +980,13 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessEnvelope"
+                  "$ref": "#/components/schemas/StorageQuotaEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -410,6 +998,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "401": {
@@ -419,6 +1012,41 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "409": {
+            "description": "The new quota is below current usage. Error code: storage_limit_below_usage.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "A request rate limit was exceeded. Error code: rate_limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -430,9 +1058,34 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "The shared rate-limit backend is unavailable. Error code: rate_limit_unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       }
     },
     "/api/v1/buckets": {
@@ -448,6 +1101,9 @@
         "parameters": [
           {
             "$ref": "#/components/parameters/BucketSearchQuery"
+          },
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
           }
         ],
         "responses": {
@@ -459,6 +1115,11 @@
                   "$ref": "#/components/schemas/BucketListEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "401": {
@@ -469,6 +1130,26 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "A request rate limit was exceeded. Error code: rate_limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "500": {
@@ -478,6 +1159,26 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "The shared rate-limit backend is unavailable. Error code: rate_limit_unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           }
@@ -511,6 +1212,11 @@
                   "$ref": "#/components/schemas/BucketEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "400": {
@@ -520,6 +1226,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -531,6 +1242,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "409": {
@@ -540,6 +1256,26 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "A request rate limit was exceeded. Error code: rate_limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -551,9 +1287,34 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "The shared rate-limit backend is unavailable. Error code: rate_limit_unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       }
     },
     "/api/v1/buckets/{bucket}": {
@@ -574,7 +1335,12 @@
         ],
         "responses": {
           "204": {
-            "description": "Bucket deleted. No response body."
+            "description": "Bucket deleted. No response body.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
           },
           "400": {
             "description": "Bucket name is invalid. Error code: invalid_bucket_name.",
@@ -583,6 +1349,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -594,6 +1365,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "404": {
@@ -603,6 +1379,26 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "A request rate limit was exceeded. Error code: rate_limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -614,9 +1410,34 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "The shared rate-limit backend is unavailable. Error code: rate_limit_unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       }
     },
     "/api/v1/buckets/{bucket}/folders": {
@@ -644,6 +1465,11 @@
                   "$ref": "#/components/schemas/FolderNodeListEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "400": {
@@ -653,6 +1479,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -664,6 +1495,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "404": {
@@ -673,6 +1509,26 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "A request rate limit was exceeded. Error code: rate_limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -684,9 +1540,34 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "The shared rate-limit backend is unavailable. Error code: rate_limit_unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       },
       "post": {
         "tags": ["Folders"],
@@ -716,6 +1597,11 @@
                   "$ref": "#/components/schemas/FolderNodeEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "400": {
@@ -725,6 +1611,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -736,6 +1627,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "404": {
@@ -745,6 +1641,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -756,6 +1657,26 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "A request rate limit was exceeded. Error code: rate_limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "500": {
@@ -766,9 +1687,34 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "The shared rate-limit backend is unavailable. Error code: rate_limit_unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       },
       "delete": {
         "tags": ["Folders"],
@@ -786,11 +1732,19 @@
           },
           {
             "$ref": "#/components/parameters/RecursiveQuery"
+          },
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
           }
         ],
         "responses": {
           "204": {
-            "description": "Folder deleted. No response body."
+            "description": "Folder deleted. No response body.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
           },
           "400": {
             "description": "Bucket name, folder path, or recursive query is invalid. Error codes: invalid_bucket_name, invalid_folder_path, invalid_request, invalid_prefix.",
@@ -799,6 +1753,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -810,6 +1769,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "404": {
@@ -819,6 +1783,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -830,6 +1799,26 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "A request rate limit was exceeded. Error code: rate_limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "500": {
@@ -839,6 +1828,26 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "The shared rate-limit backend is unavailable. Error code: rate_limit_unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           }
@@ -864,6 +1873,9 @@
         "parameters": [
           {
             "$ref": "#/components/parameters/FolderPathQuery"
+          },
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
           }
         ],
         "responses": {
@@ -876,6 +1888,11 @@
                   "format": "binary"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "400": {
@@ -885,6 +1902,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -896,6 +1918,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "404": {
@@ -906,6 +1933,26 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "A request rate limit was exceeded. Error code: rate_limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "500": {
@@ -915,6 +1962,26 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "The shared rate-limit backend is unavailable. Error code: rate_limit_unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           }
@@ -931,7 +1998,7 @@
         "tags": ["Folders"],
         "operationId": "listExplorerEntries",
         "summary": "List direct entries under a folder prefix",
-        "description": "Entries are ordered with directories first, then files, both sorted by name. next_cursor is an opaque cursor for the same prefix/search combination.",
+        "description": "Lists direct entries with directories first. sort_by defaults to created_at and sort_order defaults to desc; directories are always compared by name using the selected direction. The cursor is bound to the same sort configuration.",
         "security": [
           {
             "bearerAuth": []
@@ -949,6 +2016,15 @@
           },
           {
             "$ref": "#/components/parameters/CursorQuery"
+          },
+          {
+            "$ref": "#/components/parameters/ExplorerSortByQuery"
+          },
+          {
+            "$ref": "#/components/parameters/ExplorerSortOrderQuery"
+          },
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
           }
         ],
         "responses": {
@@ -960,6 +2036,11 @@
                   "$ref": "#/components/schemas/ExplorerEntryListEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "400": {
@@ -969,6 +2050,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -980,6 +2066,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "404": {
@@ -990,6 +2081,26 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "A request rate limit was exceeded. Error code: rate_limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "500": {
@@ -999,6 +2110,26 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "The shared rate-limit backend is unavailable. Error code: rate_limit_unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           }
@@ -1061,8 +2192,13 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessEnvelope"
+                  "$ref": "#/components/schemas/ExplorerBatchDeleteEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -1074,6 +2210,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "401": {
@@ -1083,6 +2224,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -1094,9 +2240,64 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "A request rate limit was exceeded. Error code: rate_limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "500": {
+            "description": "An internal operation failed. Error code depends on the failed subsystem.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "The shared rate-limit backend is unavailable. Error code: rate_limit_unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       }
     },
     "/api/v1/buckets/{bucket}/objects": {
@@ -1124,6 +2325,9 @@
           },
           {
             "$ref": "#/components/parameters/CursorQuery"
+          },
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
           }
         ],
         "responses": {
@@ -1135,6 +2339,11 @@
                   "$ref": "#/components/schemas/ObjectListEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "400": {
@@ -1144,6 +2353,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -1155,6 +2369,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "404": {
@@ -1165,6 +2384,26 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "A request rate limit was exceeded. Error code: rate_limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "500": {
@@ -1174,6 +2413,26 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "The shared rate-limit backend is unavailable. Error code: rate_limit_unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           }
@@ -1199,6 +2458,9 @@
         "parameters": [
           {
             "$ref": "#/components/parameters/AllowOverwriteHeader"
+          },
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
           }
         ],
         "requestBody": {
@@ -1207,6 +2469,11 @@
             "multipart/form-data": {
               "schema": {
                 "$ref": "#/components/schemas/UploadBatchForm"
+              },
+              "encoding": {
+                "manifest": {
+                  "contentType": "application/json"
+                }
               }
             }
           }
@@ -1220,6 +2487,11 @@
                   "$ref": "#/components/schemas/UploadBatchEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "400": {
@@ -1229,6 +2501,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -1240,6 +2517,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "404": {
@@ -1249,6 +2531,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -1260,6 +2547,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "413": {
@@ -1270,6 +2562,26 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "A request rate limit was exceeded. Error code: rate_limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "500": {
@@ -1279,6 +2591,26 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "The shared rate-limit backend is unavailable. Error code: rate_limit_unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           }
@@ -1308,6 +2640,12 @@
           },
           {
             "$ref": "#/components/parameters/DownloadSignatureQuery"
+          },
+          {
+            "$ref": "#/components/parameters/DownloadQuery"
+          },
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
           }
         ],
         "responses": {
@@ -1320,6 +2658,9 @@
               "Content-Length": {
                 "$ref": "#/components/headers/ContentLengthHeader"
               },
+              "Content-Disposition": {
+                "$ref": "#/components/headers/ContentDispositionHeader"
+              },
               "ETag": {
                 "$ref": "#/components/headers/ETagHeader"
               },
@@ -1328,6 +2669,9 @@
               },
               "X-Original-Filename": {
                 "$ref": "#/components/headers/OriginalFilenameHeader"
+              },
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             },
             "content": {
@@ -1347,6 +2691,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "401": {
@@ -1356,6 +2705,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -1367,6 +2721,26 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "A request rate limit was exceeded. Error code: rate_limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "500": {
@@ -1376,6 +2750,26 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "The shared rate-limit backend is unavailable. Error code: rate_limit_unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           }
@@ -1389,6 +2783,12 @@
         "parameters": [
           {
             "$ref": "#/components/parameters/OptionalAuthorizationHeader"
+          },
+          {
+            "$ref": "#/components/parameters/DownloadQuery"
+          },
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
           }
         ],
         "responses": {
@@ -1401,6 +2801,9 @@
               "Content-Length": {
                 "$ref": "#/components/headers/ContentLengthHeader"
               },
+              "Content-Disposition": {
+                "$ref": "#/components/headers/ContentDispositionHeader"
+              },
               "ETag": {
                 "$ref": "#/components/headers/ETagHeader"
               },
@@ -1409,6 +2812,9 @@
               },
               "X-Original-Filename": {
                 "$ref": "#/components/headers/OriginalFilenameHeader"
+              },
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -1420,6 +2826,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "401": {
@@ -1429,6 +2840,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -1440,6 +2856,26 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "A request rate limit was exceeded. Error code: rate_limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "500": {
@@ -1449,6 +2885,26 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "The shared rate-limit backend is unavailable. Error code: rate_limit_unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           }
@@ -1473,6 +2929,9 @@
           },
           {
             "$ref": "#/components/parameters/OriginalFilenameHeader"
+          },
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
           }
         ],
         "requestBody": {
@@ -1495,6 +2954,11 @@
                   "$ref": "#/components/schemas/ObjectEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "400": {
@@ -1504,6 +2968,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -1515,6 +2984,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "404": {
@@ -1524,6 +2998,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -1535,6 +3014,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "413": {
@@ -1545,6 +3029,26 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "A request rate limit was exceeded. Error code: rate_limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "500": {
@@ -1554,6 +3058,26 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "The shared rate-limit backend is unavailable. Error code: rate_limit_unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           }
@@ -1570,7 +3094,12 @@
         ],
         "responses": {
           "204": {
-            "description": "Object deleted. No response body."
+            "description": "Object deleted. No response body.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
           },
           "400": {
             "description": "Bucket name or object key is invalid. Error codes: invalid_bucket_name, invalid_object_key.",
@@ -1579,6 +3108,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -1590,6 +3124,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "404": {
@@ -1599,6 +3138,26 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "A request rate limit was exceeded. Error code: rate_limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -1610,9 +3169,34 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "The shared rate-limit backend is unavailable. Error code: rate_limit_unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       }
     },
     "/api/v1/buckets/{bucket}/objects/visibility/{key}": {
@@ -1652,6 +3236,11 @@
                   "$ref": "#/components/schemas/ObjectEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "400": {
@@ -1661,6 +3250,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -1672,6 +3266,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "404": {
@@ -1681,6 +3280,26 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "A request rate limit was exceeded. Error code: rate_limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -1692,9 +3311,34 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "The shared rate-limit backend is unavailable. Error code: rate_limit_unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       }
     },
     "/api/v1/recycle-bin/objects": {
@@ -1723,6 +3367,9 @@
           },
           {
             "$ref": "#/components/parameters/CursorQuery"
+          },
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
           }
         ],
         "responses": {
@@ -1731,8 +3378,13 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessEnvelope"
+                  "$ref": "#/components/schemas/RecycleBinListEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -1744,6 +3396,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "401": {
@@ -1754,6 +3411,26 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "A request rate limit was exceeded. Error code: rate_limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "500": {
@@ -1763,6 +3440,26 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "The shared rate-limit backend is unavailable. Error code: rate_limit_unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           }
@@ -1796,8 +3493,13 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessEnvelope"
+                  "$ref": "#/components/schemas/RecycleBinRestoreEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -1809,6 +3511,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "401": {
@@ -1819,9 +3526,64 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "A request rate limit was exceeded. Error code: rate_limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "500": {
+            "description": "An internal operation failed. Error code depends on the failed subsystem.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "The shared rate-limit backend is unavailable. Error code: rate_limit_unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       }
     },
     "/api/v1/recycle-bin/objects/batch-delete": {
@@ -1851,8 +3613,13 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessEnvelope"
+                  "$ref": "#/components/schemas/RecycleBinDeleteEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -1864,6 +3631,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "401": {
@@ -1874,9 +3646,64 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "A request rate limit was exceeded. Error code: rate_limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "500": {
+            "description": "An internal operation failed. Error code depends on the failed subsystem.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "The shared rate-limit backend is unavailable. Error code: rate_limit_unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       }
     },
     "/api/v1/sites": {
@@ -1898,6 +3725,11 @@
                   "$ref": "#/components/schemas/SiteListEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "401": {
@@ -1907,6 +3739,26 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "A request rate limit was exceeded. Error code: rate_limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -1918,9 +3770,34 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "The shared rate-limit backend is unavailable. Error code: rate_limit_unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       },
       "post": {
         "tags": ["Sites"],
@@ -1951,6 +3828,11 @@
                   "$ref": "#/components/schemas/SiteEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "400": {
@@ -1960,6 +3842,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -1971,6 +3858,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "404": {
@@ -1980,6 +3872,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -1991,6 +3888,26 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "A request rate limit was exceeded. Error code: rate_limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "500": {
@@ -2001,9 +3918,34 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "The shared rate-limit backend is unavailable. Error code: rate_limit_unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       }
     },
     "/api/v1/sites/publish": {
@@ -2023,6 +3965,14 @@
             "multipart/form-data": {
               "schema": {
                 "$ref": "#/components/schemas/PublishSiteForm"
+              },
+              "encoding": {
+                "manifest": {
+                  "contentType": "application/json"
+                },
+                "domains": {
+                  "contentType": "application/json"
+                }
               }
             }
           }
@@ -2036,6 +3986,11 @@
                   "$ref": "#/components/schemas/PublishSiteEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "400": {
@@ -2045,6 +4000,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -2056,6 +4016,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "404": {
@@ -2065,6 +4030,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -2076,6 +4046,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "413": {
@@ -2085,6 +4060,26 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "A request rate limit was exceeded. Error code: rate_limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -2096,9 +4091,34 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "The shared rate-limit backend is unavailable. Error code: rate_limit_unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       }
     },
     "/api/v1/sites/publish/object": {
@@ -2160,6 +4180,11 @@
                   "$ref": "#/components/schemas/SiteEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "400": {
@@ -2169,6 +4194,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -2180,6 +4210,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "404": {
@@ -2189,6 +4224,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -2200,6 +4240,26 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "A request rate limit was exceeded. Error code: rate_limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "500": {
@@ -2210,9 +4270,34 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "The shared rate-limit backend is unavailable. Error code: rate_limit_unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       }
     },
     "/api/v1/sites/publish/file": {
@@ -2232,6 +4317,11 @@
             "multipart/form-data": {
               "schema": {
                 "$ref": "#/components/schemas/PublishSiteFileForm"
+              },
+              "encoding": {
+                "domains": {
+                  "contentType": "application/json"
+                }
               }
             }
           }
@@ -2245,6 +4335,11 @@
                   "$ref": "#/components/schemas/SiteEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "400": {
@@ -2254,6 +4349,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -2265,6 +4365,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "404": {
@@ -2274,6 +4379,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -2285,6 +4395,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "413": {
@@ -2294,6 +4409,26 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "A request rate limit was exceeded. Error code: rate_limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -2305,9 +4440,34 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "The shared rate-limit backend is unavailable. Error code: rate_limit_unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       }
     },
     "/api/v1/sites/{siteID}": {
@@ -2334,6 +4494,11 @@
                   "$ref": "#/components/schemas/SiteEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "400": {
@@ -2343,6 +4508,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -2354,6 +4524,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "404": {
@@ -2363,6 +4538,26 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "A request rate limit was exceeded. Error code: rate_limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -2374,9 +4569,34 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "The shared rate-limit backend is unavailable. Error code: rate_limit_unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       },
       "put": {
         "tags": ["Sites"],
@@ -2407,6 +4627,11 @@
                   "$ref": "#/components/schemas/SiteEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "400": {
@@ -2416,6 +4641,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -2427,6 +4657,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "404": {
@@ -2436,6 +4671,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -2447,6 +4687,26 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "A request rate limit was exceeded. Error code: rate_limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "500": {
@@ -2457,9 +4717,34 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "The shared rate-limit backend is unavailable. Error code: rate_limit_unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       },
       "delete": {
         "tags": ["Sites"],
@@ -2472,7 +4757,12 @@
         ],
         "responses": {
           "204": {
-            "description": "Site deleted. No response body."
+            "description": "Site deleted. No response body.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
           },
           "400": {
             "description": "siteID is invalid. Error code: invalid_site_id.",
@@ -2481,6 +4771,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -2492,6 +4787,11 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "404": {
@@ -2501,6 +4801,26 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "A request rate limit was exceeded. Error code: rate_limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -2512,9 +4832,34 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "The shared rate-limit backend is unavailable. Error code: rate_limit_unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       }
     },
     "/api/v1/sign/download": {
@@ -2547,6 +4892,11 @@
                   "$ref": "#/components/schemas/SignedDownloadEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           },
           "400": {
@@ -2556,6 +4906,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
               }
             }
           },
@@ -2567,9 +4922,64 @@
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "429": {
+            "description": "A request rate limit was exceeded. Error code: rate_limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "500": {
+            "description": "An internal operation failed. Error code depends on the failed subsystem.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
+            }
+          },
+          "503": {
+            "description": "The shared rate-limit backend is unavailable. Error code: rate_limit_unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestIDHeader"
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIDHeader"
+          }
+        ]
       }
     }
   },
@@ -2732,7 +5142,8 @@
         "description": "Object visibility. Defaults to private when omitted.",
         "schema": {
           "type": "string",
-          "enum": ["public", "private"]
+          "enum": ["public", "private"],
+          "default": "private"
         }
       },
       "AllowOverwriteHeader": {
@@ -2741,8 +5152,8 @@
         "required": false,
         "description": "Whether to allow replacing existing objects with the same key. Defaults to false when omitted.",
         "schema": {
-          "type": "string",
-          "enum": ["true", "false"]
+          "type": "boolean",
+          "default": false
         }
       },
       "OriginalFilenameHeader": {
@@ -2772,6 +5183,47 @@
         "description": "Signature used together with expires for signed private-object downloads.",
         "schema": {
           "type": "string"
+        }
+      },
+      "RequestIDHeader": {
+        "name": "X-Request-ID",
+        "in": "header",
+        "required": false,
+        "description": "Optional caller-provided correlation ID. The server echoes it in the response; otherwise it generates one.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "DownloadQuery": {
+        "name": "download",
+        "in": "query",
+        "required": false,
+        "description": "When true, Content-Disposition is attachment; otherwise it is inline.",
+        "schema": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "ExplorerSortByQuery": {
+        "name": "sort_by",
+        "in": "query",
+        "required": false,
+        "description": "Explorer sort field.",
+        "schema": {
+          "type": "string",
+          "enum": ["name", "size", "created_at"],
+          "default": "created_at"
+        }
+      },
+      "ExplorerSortOrderQuery": {
+        "name": "sort_order",
+        "in": "query",
+        "required": false,
+        "description": "Explorer sort order.",
+        "schema": {
+          "type": "string",
+          "enum": ["asc", "desc"],
+          "default": "desc"
         }
       }
     },
@@ -2808,6 +5260,18 @@
         "schema": {
           "type": "string"
         }
+      },
+      "RequestIDHeader": {
+        "description": "Request correlation ID supplied by the caller or generated by the server.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "ContentDispositionHeader": {
+        "description": "Content presentation or download disposition.",
+        "schema": {
+          "type": "string"
+        }
       }
     },
     "schemas": {
@@ -2825,20 +5289,6 @@
               "format": "int64",
               "minimum": 1
             }
-          }
-        }
-      },
-      "SuccessEnvelope": {
-        "type": "object",
-        "required": ["request_id", "data"],
-        "properties": {
-          "request_id": {
-            "type": "string",
-            "description": "Request correlation ID returned by middleware."
-          },
-          "data": {
-            "type": "object",
-            "description": "Endpoint-specific payload."
           }
         }
       },
@@ -2942,12 +5392,13 @@
       },
       "FolderCreateRequest": {
         "type": "object",
-        "required": ["prefix", "name"],
+        "required": ["name"],
         "properties": {
           "prefix": {
             "type": "string",
             "maxLength": 512,
-            "description": "Parent folder prefix. Use an empty string for the bucket root. Non-empty values must end with '/'."
+            "description": "Parent folder prefix. Use an empty string for the bucket root. Non-empty values must end with '/'.",
+            "default": ""
           },
           "name": {
             "type": "string",
@@ -3057,7 +5508,20 @@
       },
       "ExplorerEntry": {
         "type": "object",
-        "required": ["type", "path", "name"],
+        "required": [
+          "type",
+          "path",
+          "name",
+          "is_empty",
+          "object_key",
+          "original_filename",
+          "size",
+          "content_type",
+          "etag",
+          "visibility",
+          "created_at",
+          "updated_at"
+        ],
         "properties": {
           "type": {
             "type": "string",
@@ -3172,7 +5636,8 @@
                 "file_field": "file_1",
                 "relative_path": "assets/app.js"
               }
-            ]
+            ],
+            "minItems": 1
           }
         },
         "additionalProperties": {
@@ -3210,7 +5675,7 @@
       },
       "SignDownloadRequest": {
         "type": "object",
-        "required": ["bucket", "object_key", "expires_in_seconds"],
+        "required": ["bucket", "object_key"],
         "properties": {
           "bucket": {
             "type": "string",
@@ -3226,9 +5691,10 @@
           "expires_in_seconds": {
             "type": "integer",
             "format": "int64",
-            "minimum": 0,
-            "maximum": 86400,
-            "description": "TTL in seconds. Values <= 0 use the server default in the current environment."
+            "minimum": 1,
+            "description": "Optional TTL in seconds. Omission uses APP_DEFAULT_SIGNED_URL_TTL_SECONDS (default 300); values above APP_MAX_SIGNED_URL_TTL_SECONDS (default 86400) are rejected.",
+            "x-default-config": "APP_DEFAULT_SIGNED_URL_TTL_SECONDS",
+            "x-maximum-config": "APP_MAX_SIGNED_URL_TTL_SECONDS"
           }
         }
       },
@@ -3309,14 +5775,17 @@
             "description": "Optional parent folder prefix. Leading slash is stripped. Non-empty values are normalized to end with '/'."
           },
           "domains": {
-            "type": "string",
-            "description": "JSON string array of site domains. At least one domain is required.",
-            "example": "[\"demo.localhost\"]"
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            },
+            "description": "Site domains encoded as a JSON multipart part.",
+            "example": ["demo.localhost"]
           },
           "enabled": {
-            "type": "string",
-            "enum": ["true", "false"],
-            "default": "true"
+            "type": "boolean",
+            "default": true
           },
           "index_document": {
             "type": "string",
@@ -3329,9 +5798,8 @@
             "default": ""
           },
           "spa_fallback": {
-            "type": "string",
-            "enum": ["true", "false"],
-            "default": "true"
+            "type": "boolean",
+            "default": true
           },
           "manifest": {
             "type": "array",
@@ -3349,7 +5817,8 @@
                 "file_field": "file_1",
                 "relative_path": "dist/assets/app.js"
               }
-            ]
+            ],
+            "minItems": 1
           }
         },
         "additionalProperties": {
@@ -3375,14 +5844,17 @@
             "description": "Optional parent folder prefix. Leading slash is stripped. Non-empty values are normalized to end with '/'."
           },
           "domains": {
-            "type": "string",
-            "description": "JSON string array of site domains. At least one domain is required.",
-            "example": "[\"demo.localhost\"]"
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            },
+            "description": "Site domains encoded as a JSON multipart part.",
+            "example": ["demo.localhost"]
           },
           "enabled": {
-            "type": "string",
-            "enum": ["true", "false"],
-            "default": "true"
+            "type": "boolean",
+            "default": true
           },
           "error_document": {
             "type": "string",
@@ -3390,9 +5862,8 @@
             "default": ""
           },
           "spa_fallback": {
-            "type": "string",
-            "enum": ["true", "false"],
-            "default": "true"
+            "type": "boolean",
+            "default": true
           },
           "file": {
             "type": "string",
@@ -3484,15 +5955,12 @@
       "HealthzEnvelope": {
         "allOf": [
           {
-            "$ref": "#/components/schemas/SuccessEnvelope"
+            "$ref": "#/components/schemas/EnvelopeMetadata"
           },
           {
             "type": "object",
-            "required": ["request_id", "data"],
+            "required": ["data"],
             "properties": {
-              "request_id": {
-                "type": "string"
-              },
               "data": {
                 "$ref": "#/components/schemas/HealthzResult"
               }
@@ -3503,15 +5971,12 @@
       "BucketEnvelope": {
         "allOf": [
           {
-            "$ref": "#/components/schemas/SuccessEnvelope"
+            "$ref": "#/components/schemas/EnvelopeMetadata"
           },
           {
             "type": "object",
-            "required": ["request_id", "data"],
+            "required": ["data"],
             "properties": {
-              "request_id": {
-                "type": "string"
-              },
               "data": {
                 "$ref": "#/components/schemas/Bucket"
               }
@@ -3522,15 +5987,12 @@
       "BucketListEnvelope": {
         "allOf": [
           {
-            "$ref": "#/components/schemas/SuccessEnvelope"
+            "$ref": "#/components/schemas/EnvelopeMetadata"
           },
           {
             "type": "object",
-            "required": ["request_id", "data"],
+            "required": ["data"],
             "properties": {
-              "request_id": {
-                "type": "string"
-              },
               "data": {
                 "$ref": "#/components/schemas/BucketList"
               }
@@ -3541,15 +6003,12 @@
       "FolderNodeEnvelope": {
         "allOf": [
           {
-            "$ref": "#/components/schemas/SuccessEnvelope"
+            "$ref": "#/components/schemas/EnvelopeMetadata"
           },
           {
             "type": "object",
-            "required": ["request_id", "data"],
+            "required": ["data"],
             "properties": {
-              "request_id": {
-                "type": "string"
-              },
               "data": {
                 "$ref": "#/components/schemas/FolderNode"
               }
@@ -3560,15 +6019,12 @@
       "FolderNodeListEnvelope": {
         "allOf": [
           {
-            "$ref": "#/components/schemas/SuccessEnvelope"
+            "$ref": "#/components/schemas/EnvelopeMetadata"
           },
           {
             "type": "object",
-            "required": ["request_id", "data"],
+            "required": ["data"],
             "properties": {
-              "request_id": {
-                "type": "string"
-              },
               "data": {
                 "$ref": "#/components/schemas/FolderNodeList"
               }
@@ -3579,15 +6035,12 @@
       "ObjectEnvelope": {
         "allOf": [
           {
-            "$ref": "#/components/schemas/SuccessEnvelope"
+            "$ref": "#/components/schemas/EnvelopeMetadata"
           },
           {
             "type": "object",
-            "required": ["request_id", "data"],
+            "required": ["data"],
             "properties": {
-              "request_id": {
-                "type": "string"
-              },
               "data": {
                 "$ref": "#/components/schemas/Object"
               }
@@ -3598,15 +6051,12 @@
       "ObjectListEnvelope": {
         "allOf": [
           {
-            "$ref": "#/components/schemas/SuccessEnvelope"
+            "$ref": "#/components/schemas/EnvelopeMetadata"
           },
           {
             "type": "object",
-            "required": ["request_id", "data"],
+            "required": ["data"],
             "properties": {
-              "request_id": {
-                "type": "string"
-              },
               "data": {
                 "$ref": "#/components/schemas/ObjectList"
               }
@@ -3617,15 +6067,12 @@
       "ExplorerEntryListEnvelope": {
         "allOf": [
           {
-            "$ref": "#/components/schemas/SuccessEnvelope"
+            "$ref": "#/components/schemas/EnvelopeMetadata"
           },
           {
             "type": "object",
-            "required": ["request_id", "data"],
+            "required": ["data"],
             "properties": {
-              "request_id": {
-                "type": "string"
-              },
               "data": {
                 "$ref": "#/components/schemas/ExplorerEntryList"
               }
@@ -3636,15 +6083,12 @@
       "SiteEnvelope": {
         "allOf": [
           {
-            "$ref": "#/components/schemas/SuccessEnvelope"
+            "$ref": "#/components/schemas/EnvelopeMetadata"
           },
           {
             "type": "object",
-            "required": ["request_id", "data"],
+            "required": ["data"],
             "properties": {
-              "request_id": {
-                "type": "string"
-              },
               "data": {
                 "$ref": "#/components/schemas/Site"
               }
@@ -3655,15 +6099,12 @@
       "SiteListEnvelope": {
         "allOf": [
           {
-            "$ref": "#/components/schemas/SuccessEnvelope"
+            "$ref": "#/components/schemas/EnvelopeMetadata"
           },
           {
             "type": "object",
-            "required": ["request_id", "data"],
+            "required": ["data"],
             "properties": {
-              "request_id": {
-                "type": "string"
-              },
               "data": {
                 "$ref": "#/components/schemas/SiteList"
               }
@@ -3674,15 +6115,12 @@
       "PublishSiteEnvelope": {
         "allOf": [
           {
-            "$ref": "#/components/schemas/SuccessEnvelope"
+            "$ref": "#/components/schemas/EnvelopeMetadata"
           },
           {
             "type": "object",
-            "required": ["request_id", "data"],
+            "required": ["data"],
             "properties": {
-              "request_id": {
-                "type": "string"
-              },
               "data": {
                 "$ref": "#/components/schemas/PublishSiteResult"
               }
@@ -3693,15 +6131,12 @@
       "SignedDownloadEnvelope": {
         "allOf": [
           {
-            "$ref": "#/components/schemas/SuccessEnvelope"
+            "$ref": "#/components/schemas/EnvelopeMetadata"
           },
           {
             "type": "object",
-            "required": ["request_id", "data"],
+            "required": ["data"],
             "properties": {
-              "request_id": {
-                "type": "string"
-              },
               "data": {
                 "$ref": "#/components/schemas/SignedDownloadPathResult"
               }
@@ -3712,22 +6147,821 @@
       "UploadBatchEnvelope": {
         "allOf": [
           {
-            "$ref": "#/components/schemas/SuccessEnvelope"
+            "$ref": "#/components/schemas/EnvelopeMetadata"
           },
           {
             "type": "object",
-            "required": ["request_id", "data"],
+            "required": ["data"],
             "properties": {
-              "request_id": {
-                "type": "string"
-              },
               "data": {
                 "$ref": "#/components/schemas/UploadBatchResult"
               }
             }
           }
         ]
+      },
+      "EnvelopeMetadata": {
+        "type": "object",
+        "required": ["request_id"],
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "description": "Request correlation ID returned by middleware."
+          }
+        }
+      },
+      "LivenessResult": {
+        "type": "object",
+        "required": ["status", "version"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["ok"]
+          },
+          "version": {
+            "type": "string"
+          }
+        }
+      },
+      "ReadinessResult": {
+        "type": "object",
+        "required": ["status", "version"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["ready"]
+          },
+          "version": {
+            "type": "string"
+          }
+        }
+      },
+      "RuntimeUploadMetrics": {
+        "type": "object",
+        "required": [
+          "staged",
+          "failed",
+          "bytes",
+          "staging_duration_ns",
+          "reservation_failures"
+        ],
+        "properties": {
+          "staged": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "failed": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "staging_duration_ns": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "reservation_failures": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "RuntimeTransactionMetrics": {
+        "type": "object",
+        "required": ["completed", "failed", "duration_ns"],
+        "properties": {
+          "completed": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "failed": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "duration_ns": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "RuntimeCleanupMetrics": {
+        "type": "object",
+        "required": ["completed", "failed", "backlog"],
+        "properties": {
+          "completed": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "failed": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "backlog": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "RuntimeQuotaMetrics": {
+        "type": "object",
+        "required": [
+          "used_bytes",
+          "reserved_bytes",
+          "max_bytes",
+          "remaining_bytes"
+        ],
+        "properties": {
+          "used_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "reserved_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "max_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "remaining_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "DatabasePoolMetrics": {
+        "type": "object",
+        "required": [
+          "max_open_connections",
+          "open_connections",
+          "in_use",
+          "idle",
+          "wait_count",
+          "wait_duration_ns",
+          "max_idle_closed",
+          "max_idle_time_closed",
+          "max_lifetime_closed"
+        ],
+        "properties": {
+          "max_open_connections": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "open_connections": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "in_use": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "idle": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "wait_count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "wait_duration_ns": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "max_idle_closed": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "max_idle_time_closed": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "max_lifetime_closed": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "RateLimiterMetrics": {
+        "type": "object",
+        "required": [
+          "backend",
+          "entries",
+          "max_entries",
+          "expired_evictions",
+          "capacity_evictions",
+          "capacity_rejections",
+          "rejected_requests",
+          "store_errors"
+        ],
+        "properties": {
+          "backend": {
+            "type": "string",
+            "enum": ["local", "mysql"]
+          },
+          "entries": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "max_entries": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "expired_evictions": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "capacity_evictions": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "capacity_rejections": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "rejected_requests": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "store_errors": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "RateLimitMetrics": {
+        "type": "object",
+        "required": ["ip", "public", "management", "upload", "sign", "health"],
+        "properties": {
+          "ip": {
+            "$ref": "#/components/schemas/RateLimiterMetrics"
+          },
+          "public": {
+            "$ref": "#/components/schemas/RateLimiterMetrics"
+          },
+          "management": {
+            "$ref": "#/components/schemas/RateLimiterMetrics"
+          },
+          "upload": {
+            "$ref": "#/components/schemas/RateLimiterMetrics"
+          },
+          "sign": {
+            "$ref": "#/components/schemas/RateLimiterMetrics"
+          },
+          "health": {
+            "$ref": "#/components/schemas/RateLimiterMetrics"
+          }
+        }
+      },
+      "SystemMetricsResult": {
+        "type": "object",
+        "required": [
+          "uploads",
+          "transactions",
+          "cleanup",
+          "quota",
+          "database",
+          "rate_limit"
+        ],
+        "properties": {
+          "uploads": {
+            "$ref": "#/components/schemas/RuntimeUploadMetrics"
+          },
+          "transactions": {
+            "$ref": "#/components/schemas/RuntimeTransactionMetrics"
+          },
+          "cleanup": {
+            "$ref": "#/components/schemas/RuntimeCleanupMetrics"
+          },
+          "quota": {
+            "$ref": "#/components/schemas/RuntimeQuotaMetrics"
+          },
+          "database": {
+            "$ref": "#/components/schemas/DatabasePoolMetrics"
+          },
+          "rate_limit": {
+            "$ref": "#/components/schemas/RateLimitMetrics"
+          }
+        }
+      },
+      "SystemCPU": {
+        "type": "object",
+        "required": ["used_percent"],
+        "properties": {
+          "used_percent": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "SystemMemory": {
+        "type": "object",
+        "required": [
+          "total_bytes",
+          "used_bytes",
+          "available_bytes",
+          "used_percent"
+        ],
+        "properties": {
+          "total_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "used_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "available_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "used_percent": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "SystemDisk": {
+        "type": "object",
+        "required": [
+          "label",
+          "mount_point",
+          "filesystem",
+          "total_bytes",
+          "used_bytes",
+          "free_bytes",
+          "used_percent",
+          "contains_storage_root"
+        ],
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "mount_point": {
+            "type": "string"
+          },
+          "filesystem": {
+            "type": "string"
+          },
+          "total_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "used_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "free_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "used_percent": {
+            "type": "number",
+            "format": "double"
+          },
+          "contains_storage_root": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SystemStorage": {
+        "type": "object",
+        "required": [
+          "root_path",
+          "used_bytes",
+          "max_bytes",
+          "remaining_bytes",
+          "used_percent",
+          "limit_status"
+        ],
+        "properties": {
+          "root_path": {
+            "type": "string"
+          },
+          "used_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "max_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "remaining_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "used_percent": {
+            "type": "number",
+            "format": "double"
+          },
+          "limit_status": {
+            "type": "string",
+            "enum": ["ok", "warning", "exceeded"]
+          }
+        }
+      },
+      "SystemStatsResult": {
+        "type": "object",
+        "required": ["os", "cpu", "memory", "disks", "storage"],
+        "properties": {
+          "os": {
+            "type": "string"
+          },
+          "cpu": {
+            "$ref": "#/components/schemas/SystemCPU"
+          },
+          "memory": {
+            "$ref": "#/components/schemas/SystemMemory"
+          },
+          "disks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SystemDisk"
+            }
+          },
+          "storage": {
+            "$ref": "#/components/schemas/SystemStorage"
+          }
+        }
+      },
+      "ExplorerBatchDeleteFailedItem": {
+        "type": "object",
+        "required": ["type", "path", "code", "message"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["file", "directory"]
+          },
+          "path": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ExplorerBatchDeleteResult": {
+        "type": "object",
+        "required": ["deleted_count", "failed_count", "failed_items"],
+        "properties": {
+          "deleted_count": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "failed_count": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "failed_items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExplorerBatchDeleteFailedItem"
+            }
+          }
+        }
+      },
+      "RecycleBinObject": {
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "bucket_name",
+          "path",
+          "name",
+          "object_key",
+          "original_filename",
+          "size",
+          "content_type",
+          "etag",
+          "visibility",
+          "created_at",
+          "deleted_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "type": {
+            "type": "string",
+            "enum": ["file", "directory"]
+          },
+          "bucket_name": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "object_key": {
+            "type": "string"
+          },
+          "original_filename": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "content_type": {
+            "type": "string"
+          },
+          "etag": {
+            "type": "string"
+          },
+          "visibility": {
+            "type": "string",
+            "enum": ["public", "private"]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "deleted_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RecycleBinList": {
+        "type": "object",
+        "required": ["items", "next_cursor"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecycleBinObject"
+            }
+          },
+          "next_cursor": {
+            "type": "string"
+          }
+        }
+      },
+      "RecycleBinFailedItem": {
+        "type": "object",
+        "required": ["id", "bucket_name", "path", "code", "message"],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "bucket_name": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "RecycleBinRestoreResult": {
+        "type": "object",
+        "required": ["restored_count", "failed_count", "failed_items"],
+        "properties": {
+          "restored_count": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "failed_count": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "failed_items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecycleBinFailedItem"
+            }
+          }
+        }
+      },
+      "RecycleBinDeleteResult": {
+        "type": "object",
+        "required": ["deleted_count", "failed_count", "failed_items"],
+        "properties": {
+          "deleted_count": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "failed_count": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "failed_items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecycleBinFailedItem"
+            }
+          }
+        }
+      },
+      "LivenessEnvelope": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/EnvelopeMetadata"
+          },
+          {
+            "type": "object",
+            "required": ["data"],
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/LivenessResult"
+              }
+            }
+          }
+        ]
+      },
+      "ReadinessEnvelope": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/EnvelopeMetadata"
+          },
+          {
+            "type": "object",
+            "required": ["data"],
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/ReadinessResult"
+              }
+            }
+          }
+        ]
+      },
+      "SystemMetricsEnvelope": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/EnvelopeMetadata"
+          },
+          {
+            "type": "object",
+            "required": ["data"],
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/SystemMetricsResult"
+              }
+            }
+          }
+        ]
+      },
+      "SystemStatsEnvelope": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/EnvelopeMetadata"
+          },
+          {
+            "type": "object",
+            "required": ["data"],
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/SystemStatsResult"
+              }
+            }
+          }
+        ]
+      },
+      "StorageQuotaEnvelope": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/EnvelopeMetadata"
+          },
+          {
+            "type": "object",
+            "required": ["data"],
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/SystemStorage"
+              }
+            }
+          }
+        ]
+      },
+      "ExplorerBatchDeleteEnvelope": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/EnvelopeMetadata"
+          },
+          {
+            "type": "object",
+            "required": ["data"],
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/ExplorerBatchDeleteResult"
+              }
+            }
+          }
+        ]
+      },
+      "RecycleBinListEnvelope": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/EnvelopeMetadata"
+          },
+          {
+            "type": "object",
+            "required": ["data"],
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/RecycleBinList"
+              }
+            }
+          }
+        ]
+      },
+      "RecycleBinRestoreEnvelope": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/EnvelopeMetadata"
+          },
+          {
+            "type": "object",
+            "required": ["data"],
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/RecycleBinRestoreResult"
+              }
+            }
+          }
+        ]
+      },
+      "RecycleBinDeleteEnvelope": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/EnvelopeMetadata"
+          },
+          {
+            "type": "object",
+            "required": ["data"],
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/RecycleBinDeleteResult"
+              }
+            }
+          }
+        ]
       }
     }
+  },
+  "x-light-oss-host-routing": {
+    "description": "Site domains are served by Gin's NoRoute handler and therefore cannot be represented as ordinary OpenAPI paths. A bound Host accepts GET and HEAD for any path. Root and directory paths resolve the configured index document; SPA fallback returns the index with 200; an error document is returned with 404 when configured. The route is subject to public and global rate limits.",
+    "methods": ["GET", "HEAD"],
+    "gin_path": "/*path",
+    "host": "bound-enabled-site-domain",
+    "response_statuses": [200, 404, 429, 500, 503]
   }
 }

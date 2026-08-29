@@ -58,6 +58,11 @@ func TestRecycleBinRestoreRestoresObject(t *testing.T) {
 	if restoreBody.Data.RestoredCount != 1 || restoreBody.Data.FailedCount != 0 {
 		t.Fatalf("unexpected restore result %+v", restoreBody.Data)
 	}
+	var restoreRaw apiEnvelope[map[string]any]
+	decodeJSON(t, restoreRec.Body.Bytes(), &restoreRaw)
+	if _, exists := restoreRaw.Data["deleted_count"]; exists {
+		t.Fatalf("restore response must not contain deleted_count: %+v", restoreRaw.Data)
+	}
 
 	getReq := httptest.NewRequest(http.MethodGet, "/api/v1/buckets/restore-bucket/objects/docs/readme.txt", nil)
 	getRec := httptest.NewRecorder()
@@ -177,6 +182,11 @@ func TestRecycleBinPermanentDeleteReclaimsStorageFile(t *testing.T) {
 	decodeJSON(t, deleteRecycleRec.Body.Bytes(), &deleteBody)
 	if deleteBody.Data.DeletedCount != 1 || deleteBody.Data.FailedCount != 0 {
 		t.Fatalf("unexpected delete result %+v", deleteBody.Data)
+	}
+	var deleteRaw apiEnvelope[map[string]any]
+	decodeJSON(t, deleteRecycleRec.Body.Bytes(), &deleteRaw)
+	if _, exists := deleteRaw.Data["restored_count"]; exists {
+		t.Fatalf("permanent-delete response must not contain restored_count: %+v", deleteRaw.Data)
 	}
 	if files := countFilesUnderRoot(t, storageRoot); files != 0 {
 		t.Fatalf("expected storage file to be removed after permanent delete, got %d", files)

@@ -108,24 +108,32 @@ func explorerTypeOrder(entryType ExplorerEntryType) int {
 	return 1
 }
 
-func normalizeExplorerSortBy(value string) ExplorerSortBy {
-	sortBy := ExplorerSortBy(strings.ToLower(strings.TrimSpace(value)))
-	if !isValidExplorerSortBy(sortBy) {
-		return ExplorerSortByCreatedAt
+func normalizeExplorerSortBy(value string) (ExplorerSortBy, error) {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return ExplorerSortByCreatedAt, nil
 	}
-	return sortBy
+	sortBy := ExplorerSortBy(trimmed)
+	if !isValidExplorerSortBy(sortBy) {
+		return "", fmt.Errorf("invalid explorer sort field")
+	}
+	return sortBy, nil
 }
 
 func isValidExplorerSortBy(value ExplorerSortBy) bool {
 	return value == ExplorerSortByName || value == ExplorerSortBySize || value == ExplorerSortByCreatedAt
 }
 
-func normalizeExplorerSortOrder(value string) ExplorerSortOrder {
-	sortOrder := ExplorerSortOrder(strings.ToLower(strings.TrimSpace(value)))
-	if !isValidExplorerSortOrder(sortOrder) {
-		return ExplorerSortOrderDesc
+func normalizeExplorerSortOrder(value string) (ExplorerSortOrder, error) {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return ExplorerSortOrderDesc, nil
 	}
-	return sortOrder
+	sortOrder := ExplorerSortOrder(trimmed)
+	if !isValidExplorerSortOrder(sortOrder) {
+		return "", fmt.Errorf("invalid explorer sort order")
+	}
+	return sortOrder, nil
 }
 
 func isValidExplorerSortOrder(value ExplorerSortOrder) bool {

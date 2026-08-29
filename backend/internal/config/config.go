@@ -169,6 +169,12 @@ func Load() (Config, error) {
 		return Config{}, fmt.Errorf("APP_BEARER_TOKENS is required")
 	case cfg.SigningSecret == "":
 		return Config{}, fmt.Errorf("APP_SIGNING_SECRET is required")
+	case cfg.DefaultSignedURLTTLSeconds <= 0:
+		return Config{}, fmt.Errorf("APP_DEFAULT_SIGNED_URL_TTL_SECONDS must be greater than zero")
+	case cfg.MaxSignedURLTTLSeconds <= 0:
+		return Config{}, fmt.Errorf("APP_MAX_SIGNED_URL_TTL_SECONDS must be greater than zero")
+	case cfg.DefaultSignedURLTTLSeconds > cfg.MaxSignedURLTTLSeconds:
+		return Config{}, fmt.Errorf("APP_DEFAULT_SIGNED_URL_TTL_SECONDS must not exceed APP_MAX_SIGNED_URL_TTL_SECONDS")
 	case cfg.MaxUploadSizeBytes <= 0:
 		return Config{}, fmt.Errorf("APP_MAX_UPLOAD_SIZE_BYTES must be greater than zero")
 	case cfg.ChunkSizeBytes <= 0:

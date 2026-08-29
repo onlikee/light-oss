@@ -2,7 +2,6 @@ package handler
 
 import (
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -40,15 +39,29 @@ type recycleBinFailedItemResponse struct {
 	Message    string `json:"message"`
 }
 
-type recycleBinBatchResponse struct {
-	DeletedCount  int                            `json:"deleted_count"`
+type recycleBinRestoreResponse struct {
 	RestoredCount int                            `json:"restored_count"`
 	FailedCount   int                            `json:"failed_count"`
 	FailedItems   []recycleBinFailedItemResponse `json:"failed_items"`
 }
 
+type recycleBinDeleteResponse struct {
+	DeletedCount int                            `json:"deleted_count"`
+	FailedCount  int                            `json:"failed_count"`
+	FailedItems  []recycleBinFailedItemResponse `json:"failed_items"`
+}
+
 func (h *apiHandler) listRecycleBinObjects(c *gin.Context) {
-	limit, _ := strconv.Atoi(c.Query("limit"))
+	rawLimit, limitProvided := c.GetQuery("limit")
+	limit, err := parseOptionalIntQuery(rawLimit, limitProvided)
+	if err != nil {
+		response.Error(c, apperrors.New(http.StatusBadRequest, "invalid_request", "limit must be an integer"))
+		return
+	}
+	if limitProvided && (limit < 1 || limit > 100) {
+		response.Error(c, apperrors.New(http.StatusBadRequest, "invalid_request", "limit must be between 1 and 100"))
+		return
+	}
 	result, err := h.recycleBinService.ListObjects(c.Request.Context(), service.ListRecycleBinObjectsInput{
 		BucketName: c.Query("bucket"),
 		Limit:      limit,
@@ -94,7 +107,7 @@ func (h *apiHandler) restoreRecycleBinObjects(c *gin.Context) {
 		})
 	}
 
-	response.JSON(c, http.StatusOK, recycleBinBatchResponse{
+	response.JSON(c, http.StatusOK, recycleBinRestoreResponse{
 		RestoredCount: result.RestoredCount,
 		FailedCount:   result.FailedCount,
 		FailedItems:   failedItems,
@@ -125,7 +138,7 @@ func (h *apiHandler) deleteRecycleBinObjects(c *gin.Context) {
 		})
 	}
 
-	response.JSON(c, http.StatusOK, recycleBinBatchResponse{
+	response.JSON(c, http.StatusOK, recycleBinDeleteResponse{
 		DeletedCount: result.DeletedCount,
 		FailedCount:  result.FailedCount,
 		FailedItems:  failedItems,
