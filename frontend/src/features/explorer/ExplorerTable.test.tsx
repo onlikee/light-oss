@@ -76,7 +76,9 @@ describe("ExplorerTable", () => {
       within(popover!).getByRole("radio", { name: "Descending" }),
     ).not.toBeChecked();
 
-    await userEvent.click(within(popover!).getByRole("button", { name: "Apply" }));
+    await userEvent.click(
+      within(popover!).getByRole("button", { name: "Apply" }),
+    );
     expect(sonner.toast.error).toHaveBeenCalledWith(
       "Select a sort order before applying.",
     );
@@ -204,7 +206,9 @@ describe("ExplorerTable", () => {
     renderExplorerTable(createFileEntry({}));
 
     const tables = screen.getAllByRole("table");
-    const scrollContainer = screen.getByTestId("explorer-table-scroll-container");
+    const scrollContainer = screen.getByTestId(
+      "explorer-table-scroll-container",
+    );
 
     expect(tables).toHaveLength(2);
     expect(scrollContainer.className).toContain("flex-1");
@@ -218,7 +222,10 @@ describe("ExplorerTable", () => {
 
     const rowCheckboxes = screen
       .getAllByRole("checkbox")
-      .filter((checkbox) => checkbox.getAttribute("aria-label") !== "Select all items");
+      .filter(
+        (checkbox) =>
+          checkbox.getAttribute("aria-label") !== "Select all items",
+      );
 
     expect(rowCheckboxes.length).toBeLessThan(40);
     expect(
@@ -229,7 +236,9 @@ describe("ExplorerTable", () => {
   it("renders later rows after scrolling and keeps row actions interactive", async () => {
     renderExplorerTable(createManyFileEntries(120));
 
-    const scrollContainer = screen.getByTestId("explorer-table-scroll-container");
+    const scrollContainer = screen.getByTestId(
+      "explorer-table-scroll-container",
+    );
     Object.defineProperty(scrollContainer, "scrollTop", {
       configurable: true,
       value: 49 * 100,
@@ -250,8 +259,7 @@ describe("ExplorerTable", () => {
     expect(
       within(dialog).getByText((_, element) => {
         return (
-          element?.tagName === "DD" &&
-          element.textContent === "file-110.txt"
+          element?.tagName === "DD" && element.textContent === "file-110.txt"
         );
       }),
     ).toBeInTheDocument();
@@ -382,9 +390,7 @@ describe("ExplorerTable", () => {
     });
 
     expect(title.className).toContain("wrap-anywhere");
-    expect(originalFilenameValue.className).toContain(
-      "wrap-anywhere",
-    );
+    expect(originalFilenameValue.className).toContain("wrap-anywhere");
   });
 
   it("uses shared wrap-anywhere classes for long object keys in delete dialogs", async () => {
@@ -502,7 +508,9 @@ describe("ExplorerTable", () => {
 
     expect(fetchMock).not.toHaveBeenCalled();
     expect(
-      within(dialog).getByText("This file is too large to preview. Markdown preview is not supported above 100 KB."),
+      within(dialog).getByText(
+        "This file is too large to preview. Markdown preview is not supported above 100 KB.",
+      ),
     ).toBeInTheDocument();
     expect(
       within(dialog).queryByRole("button", { name: "Fullscreen preview" }),
@@ -774,6 +782,7 @@ function createFileEntry(
     content_type: "text/plain",
     etag: "etag",
     visibility: "public",
+    created_at: "2026-04-07T01:00:00Z",
     updated_at: "2026-04-07T01:00:00Z",
     ...overrides,
   };

@@ -717,6 +717,7 @@ describe("BucketObjectsPage", () => {
             content_type: null,
             etag: null,
             visibility: null,
+            created_at: null,
             updated_at: null,
           },
         ],
@@ -735,6 +736,7 @@ describe("BucketObjectsPage", () => {
             content_type: "text/plain",
             etag: "abcdef1234567890",
             visibility: "public",
+            created_at: "2026-03-25T00:00:00Z",
             updated_at: "2026-03-25T00:00:00Z",
           },
         ],
@@ -769,7 +771,10 @@ describe("BucketObjectsPage", () => {
 
   it("keeps previous rows covered while navigating into another directory", async () => {
     let resolveNestedDirectory:
-      | ((value: { items: typeof nestedFileItems; next_cursor: string }) => void)
+      | ((value: {
+          items: typeof nestedFileItems;
+          next_cursor: string;
+        }) => void)
       | undefined;
     const nestedFileItems = [
       {
@@ -783,6 +788,7 @@ describe("BucketObjectsPage", () => {
         content_type: "text/plain",
         etag: "abcdef1234567890",
         visibility: "public" as const,
+        created_at: "2026-03-25T00:00:00Z",
         updated_at: "2026-03-25T00:00:00Z",
       },
     ];
@@ -801,6 +807,7 @@ describe("BucketObjectsPage", () => {
             content_type: null,
             etag: null,
             visibility: null,
+            created_at: null,
             updated_at: null,
           },
         ],
@@ -857,6 +864,7 @@ describe("BucketObjectsPage", () => {
           content_type: "text/plain",
           etag: "abcdef1234567890",
           visibility: "public",
+          created_at: "2026-03-25T00:00:00Z",
           updated_at: "2026-03-25T00:00:00Z",
         },
       ],
@@ -1065,6 +1073,7 @@ describe("BucketObjectsPage", () => {
           content_type: null,
           etag: null,
           visibility: null,
+          created_at: null,
           updated_at: null,
         },
         {
@@ -1078,6 +1087,7 @@ describe("BucketObjectsPage", () => {
           content_type: null,
           etag: null,
           visibility: null,
+          created_at: null,
           updated_at: null,
         },
       ],
@@ -1138,6 +1148,7 @@ describe("BucketObjectsPage", () => {
           content_type: null,
           etag: null,
           visibility: null,
+          created_at: null,
           updated_at: null,
         },
       ],
@@ -1173,6 +1184,7 @@ describe("BucketObjectsPage", () => {
           content_type: "text/plain",
           etag: "etag",
           visibility: "private",
+          created_at: "2026-04-07T01:00:00Z",
           updated_at: "2026-04-07T01:00:00Z",
         },
       ],
@@ -1195,7 +1207,6 @@ describe("BucketObjectsPage", () => {
         { apiBaseUrl: "http://localhost:8080", bearerToken: "dev-token" },
         "demo",
         "docs/private.txt",
-        300,
       );
       expect(downloadFile).toHaveBeenCalledWith(
         "http://localhost:8080/signed-download?download=true",
@@ -1219,6 +1230,7 @@ describe("BucketObjectsPage", () => {
           content_type: "text/plain",
           etag: "etag-a",
           visibility: "public",
+          created_at: "2026-04-07T01:00:00Z",
           updated_at: "2026-04-07T01:00:00Z",
         },
         {
@@ -1232,6 +1244,7 @@ describe("BucketObjectsPage", () => {
           content_type: null,
           etag: null,
           visibility: null,
+          created_at: null,
           updated_at: null,
         },
       ],
@@ -1295,6 +1308,7 @@ describe("BucketObjectsPage", () => {
           content_type: "text/plain",
           etag: "etag-a",
           visibility: "public",
+          created_at: "2026-04-07T01:00:00Z",
           updated_at: "2026-04-07T01:00:00Z",
         },
         {
@@ -1308,6 +1322,7 @@ describe("BucketObjectsPage", () => {
           content_type: null,
           etag: null,
           visibility: null,
+          created_at: null,
           updated_at: null,
         },
       ],
@@ -1359,6 +1374,7 @@ describe("BucketObjectsPage", () => {
             content_type: "text/plain",
             etag: "etag-a",
             visibility: "public",
+            created_at: "2026-04-07T01:00:00Z",
             updated_at: "2026-04-07T01:00:00Z",
           },
           {
@@ -1372,6 +1388,7 @@ describe("BucketObjectsPage", () => {
             content_type: null,
             etag: null,
             visibility: null,
+            created_at: null,
             updated_at: null,
           },
         ],
@@ -1440,6 +1457,7 @@ describe("BucketObjectsPage", () => {
           content_type: "text/plain",
           etag: "etag-a",
           visibility: "public",
+          created_at: "2026-04-07T01:00:00Z",
           updated_at: "2026-04-07T01:00:00Z",
         },
         {
@@ -1453,6 +1471,7 @@ describe("BucketObjectsPage", () => {
           content_type: null,
           etag: null,
           visibility: null,
+          created_at: null,
           updated_at: null,
         },
         {
@@ -1466,6 +1485,7 @@ describe("BucketObjectsPage", () => {
           content_type: "text/markdown",
           etag: "etag-m",
           visibility: "private",
+          created_at: "2026-04-07T01:00:00Z",
           updated_at: "2026-04-07T01:00:00Z",
         },
         {
@@ -1479,6 +1499,7 @@ describe("BucketObjectsPage", () => {
           content_type: null,
           etag: null,
           visibility: null,
+          created_at: null,
           updated_at: null,
         },
       ],
@@ -1553,6 +1574,7 @@ describe("BucketObjectsPage", () => {
             content_type: "text/plain",
             etag: "etag-a",
             visibility: "public",
+            created_at: "2026-04-07T01:00:00Z",
             updated_at: "2026-04-07T01:00:00Z",
           },
           {
@@ -1566,6 +1588,7 @@ describe("BucketObjectsPage", () => {
             content_type: "text/plain",
             etag: "etag-b",
             visibility: "public",
+            created_at: "2026-04-07T01:00:00Z",
             updated_at: "2026-04-07T01:00:00Z",
           },
         ],
@@ -1584,6 +1607,7 @@ describe("BucketObjectsPage", () => {
             content_type: "text/plain",
             etag: "etag-b",
             visibility: "public",
+            created_at: "2026-04-07T01:00:00Z",
             updated_at: "2026-04-07T01:00:00Z",
           },
         ],
@@ -1649,6 +1673,7 @@ describe("BucketObjectsPage", () => {
             content_type: "text/plain",
             etag: "feedface12345678",
             visibility: "private",
+            created_at: "2026-03-25T00:02:00Z",
             updated_at: "2026-03-25T00:02:00Z",
           },
         ],
@@ -1718,6 +1743,7 @@ describe("BucketObjectsPage", () => {
       content_type: "text/plain",
       etag: "existing12345678",
       visibility: "private" as const,
+      created_at: "2026-03-25T00:01:00Z",
       updated_at: "2026-03-25T00:01:00Z",
     };
     const uploadedItem = {
@@ -1731,11 +1757,15 @@ describe("BucketObjectsPage", () => {
       content_type: "text/plain",
       etag: "feedface12345678",
       visibility: "private" as const,
+      created_at: "2026-03-25T00:02:00Z",
       updated_at: "2026-03-25T00:02:00Z",
     };
     let listExplorerEntriesCallCount = 0;
     let resolveRefetch:
-      | ((value: { items: typeof uploadedItem[]; next_cursor: string }) => void)
+      | ((value: {
+          items: (typeof uploadedItem)[];
+          next_cursor: string;
+        }) => void)
       | undefined;
 
     vi.mocked(listExplorerEntries).mockImplementation(async () => {
@@ -1817,6 +1847,7 @@ describe("BucketObjectsPage", () => {
       content_type: "text/plain",
       etag: "existing12345678",
       visibility: "private" as const,
+      created_at: "2026-03-25T00:01:00Z",
       updated_at: "2026-03-25T00:01:00Z",
     };
     const refreshedItems = [
@@ -1831,6 +1862,7 @@ describe("BucketObjectsPage", () => {
         content_type: "text/plain",
         etag: "refreshed123456",
         visibility: "private" as const,
+        created_at: "2026-03-25T00:02:00Z",
         updated_at: "2026-03-25T00:02:00Z",
       },
     ];
@@ -1897,6 +1929,7 @@ describe("BucketObjectsPage", () => {
             content_type: "text/plain",
             etag: "feedface12345678",
             visibility: "private",
+            created_at: "2026-03-25T00:02:00Z",
             updated_at: "2026-03-25T00:02:00Z",
           },
         ],
@@ -2026,6 +2059,7 @@ describe("BucketObjectsPage", () => {
             content_type: "text/plain",
             etag: "feedface12345678",
             visibility: "private",
+            created_at: "2026-03-25T00:02:00Z",
             updated_at: "2026-03-25T00:02:00Z",
           },
         ],
@@ -2124,6 +2158,7 @@ describe("BucketObjectsPage", () => {
             content_type: "text/plain",
             etag: "feedface12345678",
             visibility: "private",
+            created_at: "2026-03-25T00:02:00Z",
             updated_at: "2026-03-25T00:02:00Z",
           },
         ],
@@ -2201,6 +2236,7 @@ describe("BucketObjectsPage", () => {
             content_type: null,
             etag: null,
             visibility: null,
+            created_at: null,
             updated_at: null,
           },
         ],
@@ -2299,6 +2335,7 @@ describe("BucketObjectsPage", () => {
             content_type: "text/html",
             etag: "feedface12345678",
             visibility: "public",
+            created_at: "2026-03-25T00:02:00Z",
             updated_at: "2026-03-25T00:02:00Z",
           },
         ],
@@ -2415,9 +2452,7 @@ describe("BucketObjectsPage", () => {
 
     const backButton = await screen.findByRole("button", { name: "Go back" });
     expect(backButton).toBeEnabled();
-    expect(
-      screen.getByRole("button", { name: "Go forward" }),
-    ).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Go forward" })).toBeDisabled();
 
     await waitFor(() => {
       expect(listExplorerEntries).toHaveBeenLastCalledWith(
@@ -2509,6 +2544,7 @@ describe("BucketObjectsPage", () => {
           content_type: "text/plain",
           etag: "abcdef1234567890",
           visibility: "public",
+          created_at: "2026-03-25T00:00:00Z",
           updated_at: "2026-03-25T00:00:00Z",
         },
       ],
@@ -2561,6 +2597,7 @@ describe("BucketObjectsPage", () => {
           content_type: null,
           etag: null,
           visibility: null,
+          created_at: null,
           updated_at: null,
         },
       ],
@@ -2619,6 +2656,7 @@ describe("BucketObjectsPage", () => {
           content_type: null,
           etag: null,
           visibility: null,
+          created_at: null,
           updated_at: null,
         },
         {
@@ -2632,6 +2670,7 @@ describe("BucketObjectsPage", () => {
           content_type: "text/plain",
           etag: "abcdef1234567890",
           visibility: "public",
+          created_at: "2026-03-25T00:00:00Z",
           updated_at: "2026-03-25T00:00:00Z",
         },
       ],
@@ -2670,6 +2709,7 @@ describe("BucketObjectsPage", () => {
           content_type: null,
           etag: null,
           visibility: null,
+          created_at: null,
           updated_at: null,
         },
       ],
@@ -2744,6 +2784,7 @@ describe("BucketObjectsPage", () => {
             content_type: "text/plain",
             etag: "abcdef1234567890",
             visibility: "private",
+            created_at: "2026-03-25T00:00:00Z",
             updated_at: "2026-03-25T00:00:00Z",
           },
         ],
@@ -2762,6 +2803,7 @@ describe("BucketObjectsPage", () => {
             content_type: "text/plain",
             etag: "abcdef1234567890",
             visibility: "public",
+            created_at: "2026-03-25T00:00:00Z",
             updated_at: "2026-03-25T00:00:00Z",
           },
         ],
@@ -2835,6 +2877,7 @@ describe("BucketObjectsPage", () => {
           content_type: null,
           etag: null,
           visibility: null,
+          created_at: null,
           updated_at: null,
         },
       ],
@@ -2879,6 +2922,7 @@ describe("BucketObjectsPage", () => {
           content_type: "text/plain",
           etag: "abcdef1234567890",
           visibility: "public",
+          created_at: "2026-03-25T00:00:00Z",
           updated_at: "2026-03-25T00:00:00Z",
         },
       ],
@@ -2919,6 +2963,7 @@ describe("BucketObjectsPage", () => {
           content_type: "image/png",
           etag: "abc123",
           visibility: "public",
+          created_at: "2026-03-25T00:00:00Z",
           updated_at: "2026-03-25T00:00:00Z",
         },
       ],
@@ -2961,6 +3006,7 @@ describe("BucketObjectsPage", () => {
             content_type: "text/plain",
             etag: "abcdef1234567890",
             visibility: "private",
+            created_at: "2026-03-25T00:00:00Z",
             updated_at: "2026-03-25T00:00:00Z",
           },
         ],
@@ -2979,6 +3025,7 @@ describe("BucketObjectsPage", () => {
             content_type: "text/plain",
             etag: "abcdef1234567890",
             visibility: "public",
+            created_at: "2026-03-25T00:00:00Z",
             updated_at: "2026-03-25T00:00:00Z",
           },
         ],

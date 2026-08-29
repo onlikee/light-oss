@@ -51,7 +51,7 @@ export interface ExplorerDirectoryEntry {
   content_type: null;
   etag: null;
   visibility: null;
-  created_at?: null;
+  created_at: null;
   updated_at: null;
 }
 
@@ -66,7 +66,7 @@ export interface ExplorerFileEntry {
   content_type: string;
   etag: string;
   visibility: ObjectVisibility;
-  created_at?: string;
+  created_at: string;
   updated_at: string;
 }
 

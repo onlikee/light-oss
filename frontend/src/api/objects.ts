@@ -322,7 +322,7 @@ export function createSignedDownloadPath(
   settings: AppSettings,
   bucket: string,
   objectKey: string,
-  expiresInSeconds: number,
+  expiresInSeconds?: number,
 ) {
   return apiRequest<SignedDownloadPathResult>(settings, {
     method: "POST",
@@ -330,7 +330,9 @@ export function createSignedDownloadPath(
     data: {
       bucket,
       object_key: objectKey,
-      expires_in_seconds: expiresInSeconds,
+      ...(expiresInSeconds === undefined
+        ? {}
+        : { expires_in_seconds: expiresInSeconds }),
     },
   });
 }

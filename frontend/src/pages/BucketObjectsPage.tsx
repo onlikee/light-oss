@@ -256,7 +256,9 @@ export function BucketObjectsPage() {
 
   useEffect(() => {
     setSelectedPaths((current) => {
-      const visiblePaths = new Set((entryItems ?? []).map((entry) => entry.path));
+      const visiblePaths = new Set(
+        (entryItems ?? []).map((entry) => entry.path),
+      );
       let changed = false;
       const next = new Set<string>();
 
@@ -544,12 +546,12 @@ export function BucketObjectsPage() {
   const showEntriesLoadingOverlay = hasEntriesData && entriesLoading;
   const bucketMissing = isBucketNotFoundError(entriesQuery.error);
   const overwriteTarget = pendingOverwriteUpload
-    ? pendingOverwriteUpload.target ??
+    ? (pendingOverwriteUpload.target ??
       joinExplorerPath(
         prefix,
         pendingOverwriteUpload.value.objectKey ||
           pendingOverwriteUpload.value.file.name,
-      )
+      ))
     : "";
 
   if (!bucket) {
@@ -628,7 +630,8 @@ export function BucketObjectsPage() {
 
   function handlePrefixBack() {
     if (prefixBackHistory.length > 0) {
-      const previousPrefix = prefixBackHistory[prefixBackHistory.length - 1] ?? "";
+      const previousPrefix =
+        prefixBackHistory[prefixBackHistory.length - 1] ?? "";
       setPrefixBackHistory((history) => history.slice(0, -1));
       setPrefixForwardHistory((history) => [...history, prefix]);
       applyPrefixNavigation(previousPrefix);
@@ -649,7 +652,8 @@ export function BucketObjectsPage() {
       return;
     }
 
-    const nextPrefix = prefixForwardHistory[prefixForwardHistory.length - 1] ?? "";
+    const nextPrefix =
+      prefixForwardHistory[prefixForwardHistory.length - 1] ?? "";
     setPrefixForwardHistory((history) => history.slice(0, -1));
     setPrefixBackHistory((history) => [...history, prefix]);
     applyPrefixNavigation(nextPrefix);
@@ -781,14 +785,8 @@ export function BucketObjectsPage() {
           })
         : buildApiURL(
             settings.apiBaseUrl,
-            (
-              await createSignedDownloadPath(
-                settings,
-                bucket,
-                entry.object_key,
-                300,
-              )
-            ).path,
+            (await createSignedDownloadPath(settings, bucket, entry.object_key))
+              .path,
           );
 
     await downloadFile(
@@ -1217,7 +1215,9 @@ export function BucketObjectsPage() {
                             onChange={(event) =>
                               setSearchInput(event.target.value)
                             }
-                            placeholder={t("explorer.toolbar.searchPlaceholder")}
+                            placeholder={t(
+                              "explorer.toolbar.searchPlaceholder",
+                            )}
                             value={searchInput}
                           />
                         </Field>
@@ -1496,7 +1496,9 @@ function BulkDeletePreviewItem({
         aria-hidden="true"
         className={cn(
           "mt-0.5 inline-flex size-4 shrink-0 items-center justify-center [&_svg]:size-4",
-          entry.type === "directory" ? "text-amber-500" : "text-muted-foreground",
+          entry.type === "directory"
+            ? "text-amber-500"
+            : "text-muted-foreground",
         )}
       >
         {entry.type === "directory" ? <FolderIcon /> : <FileTextIcon />}

@@ -4,6 +4,7 @@ import {
   buildApiURL,
   buildPublicObjectURL,
   checkObjectExists,
+  createSignedDownloadPath,
   deleteRecycleBinObjects,
   deleteExplorerEntriesBatch,
   deleteFolder,
@@ -408,6 +409,22 @@ describe("objects api helpers", () => {
         url: "/api/v1/recycle-bin/objects/batch-delete",
         data: {
           item_ids: [7],
+        },
+      }),
+    );
+  });
+
+  it("omits the signed download TTL so the server default is used", async () => {
+    await createSignedDownloadPath(settings, "demo", "private.txt");
+
+    expect(apiRequestMock).toHaveBeenCalledWith(
+      settings,
+      expect.objectContaining({
+        method: "POST",
+        url: "/api/v1/sign/download",
+        data: {
+          bucket: "demo",
+          object_key: "private.txt",
         },
       }),
     );

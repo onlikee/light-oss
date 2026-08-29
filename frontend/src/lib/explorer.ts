@@ -1,4 +1,4 @@
-export const explorerPageSizes = [10, 20, 50, 100, 200, 1000] as const;
+export const explorerPageSizes = [10, 20, 50, 100, 200] as const;
 export const explorerSortByValues = ["name", "size", "created_at"] as const;
 export const explorerSortOrderValues = ["asc", "desc"] as const;
 

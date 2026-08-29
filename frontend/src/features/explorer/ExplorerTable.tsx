@@ -175,7 +175,9 @@ export function ExplorerTable({
   const [deleteFilePath, setDeleteFilePath] = useState<string | null>(null);
   const [deleteFolderPath, setDeleteFolderPath] = useState<string | null>(null);
   const [publishFilePath, setPublishFilePath] = useState<string | null>(null);
-  const [publishFolderPath, setPublishFolderPath] = useState<string | null>(null);
+  const [publishFolderPath, setPublishFolderPath] = useState<string | null>(
+    null,
+  );
   const selectedCount = entries.filter((entry) =>
     selectedPaths.has(entry.path),
   ).length;
@@ -198,7 +200,10 @@ export function ExplorerTable({
     overscan: explorerTableOverscan,
   });
   const virtualRows = rowVirtualizer.getVirtualItems();
-  const fallbackRowCount = Math.min(entries.length, explorerTableOverscan * 2 + 1);
+  const fallbackRowCount = Math.min(
+    entries.length,
+    explorerTableOverscan * 2 + 1,
+  );
   const fallbackStartIndex = Math.min(
     Math.floor(fallbackScrollOffset / explorerTableRowEstimate),
     Math.max(entries.length - fallbackRowCount, 0),
@@ -214,14 +219,17 @@ export function ExplorerTable({
           { length: fallbackEndIndex - fallbackStartIndex },
           (_, index) => fallbackStartIndex + index,
         );
-  const topSpacerHeight = virtualRows.length > 0 ? (virtualRows[0]?.start ?? 0) : 0;
+  const topSpacerHeight =
+    virtualRows.length > 0 ? (virtualRows[0]?.start ?? 0) : 0;
   const bottomSpacerHeight =
     virtualRows.length > 0
       ? Math.max(
-          rowVirtualizer.getTotalSize() - virtualRows[virtualRows.length - 1]!.end,
+          rowVirtualizer.getTotalSize() -
+            virtualRows[virtualRows.length - 1]!.end,
           0,
         )
-      : Math.max(entries.length - fallbackEndIndex, 0) * explorerTableRowEstimate;
+      : Math.max(entries.length - fallbackEndIndex, 0) *
+        explorerTableRowEstimate;
   const fallbackTopSpacerHeight = fallbackStartIndex * explorerTableRowEstimate;
 
   useEffect(() => {
@@ -262,7 +270,8 @@ export function ExplorerTable({
     const updateHeaderScrollbarOffset = () => {
       setHeaderScrollbarOffset(
         Math.max(
-          scrollContainerElement.offsetWidth - scrollContainerElement.clientWidth,
+          scrollContainerElement.offsetWidth -
+            scrollContainerElement.clientWidth,
           0,
         ),
       );
@@ -324,7 +333,9 @@ export function ExplorerTable({
                       onApply={onSortApply}
                       onClear={onSortClear}
                       open={openSortBy === "name"}
-                      onOpenChange={(open) => setOpenSortBy(open ? "name" : null)}
+                      onOpenChange={(open) =>
+                        setOpenSortBy(open ? "name" : null)
+                      }
                       sortBy="name"
                       sortOrder={sortOrder}
                     />
@@ -349,7 +360,9 @@ export function ExplorerTable({
                       onApply={onSortApply}
                       onClear={onSortClear}
                       open={openSortBy === "size"}
-                      onOpenChange={(open) => setOpenSortBy(open ? "size" : null)}
+                      onOpenChange={(open) =>
+                        setOpenSortBy(open ? "size" : null)
+                      }
                       sortBy="size"
                       sortOrder={sortOrder}
                     />
@@ -664,7 +677,7 @@ function ExplorerTableEntryRow({
       >
         {entry.type === "directory"
           ? "-"
-          : formatDate(entry.created_at ?? entry.updated_at, locale)}
+          : formatDate(entry.created_at, locale)}
       </TableCell>
       <TableCell>
         {entry.type === "directory" ? (
@@ -918,9 +931,8 @@ function ExplorerSortHeader({
   const { t } = useI18n();
   const active = activeSortBy === sortBy;
   const appliedSortOrder = active ? (sortOrder ?? "asc") : "asc";
-  const [draftSortOrder, setDraftSortOrder] = useState<
-    ExplorerSortOrder | null
-  >(active ? appliedSortOrder : null);
+  const [draftSortOrder, setDraftSortOrder] =
+    useState<ExplorerSortOrder | null>(active ? appliedSortOrder : null);
   const triggerState = active
     ? appliedSortOrder === "asc"
       ? t("explorer.sort.state.asc")
@@ -1121,7 +1133,9 @@ function FileDetailsDialog({
   const [isSavingVisibility, setIsSavingVisibility] = useState(false);
   const { locale, t } = useI18n();
   const publicUrl =
-    entry && currentVisibility === "public" ? buildPublicUrl(entry.object_key) : "";
+    entry && currentVisibility === "public"
+      ? buildPublicUrl(entry.object_key)
+      : "";
   const previewType = entry ? getPreviewType(entry) : null;
   const markdownPreviewTooLarge =
     entry !== null &&
@@ -1146,7 +1160,11 @@ function FileDetailsDialog({
   }
 
   async function handleSaveVisibility() {
-    if (!entry || selectedVisibility === currentVisibility || isSavingVisibility) {
+    if (
+      !entry ||
+      selectedVisibility === currentVisibility ||
+      isSavingVisibility
+    ) {
       return;
     }
 

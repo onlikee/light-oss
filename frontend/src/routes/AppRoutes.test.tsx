@@ -15,7 +15,7 @@ vi.mock("../components/Layout", async () => {
       <>
         <nav>
           <Link to="/settings">Settings</Link>
-          <Link to="/buckets/demo?prefix=dist%2Fassets%2F&limit=1000">
+          <Link to="/buckets/demo?prefix=dist%2Fassets%2F&limit=200">
             Cached bucket
           </Link>
         </nav>
@@ -71,7 +71,7 @@ describe("AppRoutes", () => {
     const user = userEvent.setup();
 
     renderWithApp(<AppRoutes />, {
-      route: "/buckets/demo?prefix=dist%2Fassets%2F&limit=1000",
+      route: "/buckets/demo?prefix=dist%2Fassets%2F&limit=200",
     });
 
     await user.type(screen.getByLabelText("Bucket state"), "kept");
