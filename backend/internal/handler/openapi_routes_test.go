@@ -339,6 +339,7 @@ func assertOpenAPICompleteness(t *testing.T, path string) {
 	assertMultipartJSONEncoding(t, document, "uploadObjectBatch", "manifest")
 	assertMultipartJSONEncoding(t, document, "publishSiteUpload", "manifest", "domains")
 	assertMultipartJSONEncoding(t, document, "publishSiteFile", "domains")
+	assertOpenAPIWireRepresentations(t, document)
 
 	hostRouting := mustJSONObject(t, document["x-light-oss-host-routing"], "x-light-oss-host-routing")
 	if !reflect.DeepEqual(hostRouting["methods"], []any{"GET", "HEAD"}) {
@@ -346,6 +347,50 @@ func assertOpenAPICompleteness(t *testing.T, path string) {
 	}
 	if !reflect.DeepEqual(hostRouting["response_statuses"], []any{float64(200), float64(404), float64(429), float64(500), float64(503)}) {
 		t.Errorf("OpenAPI spec %s host routing statuses = %#v", path, hostRouting["response_statuses"])
+	}
+}
+
+func assertOpenAPIWireRepresentations(t *testing.T, document map[string]any) {
+	t.Helper()
+
+	upload := findOpenAPIOperation(t, document, "uploadObject")
+	requestBody := mustJSONObject(t, upload["requestBody"], "uploadObject requestBody")
+	content := mustJSONObject(t, requestBody["content"], "uploadObject request content")
+	if _, ok := content["*/*"]; !ok || len(content) != 1 {
+		t.Errorf("uploadObject request media types = %#v, want only */*", reflect.ValueOf(content).MapKeys())
+	}
+
+	archive := findOpenAPIOperation(t, document, "downloadFolderArchive")
+	archiveResponses := mustJSONObject(t, archive["responses"], "downloadFolderArchive responses")
+	archiveSuccess := mustJSONObject(t, archiveResponses["200"], "downloadFolderArchive response 200")
+	archiveHeaders := mustJSONObject(t, archiveSuccess["headers"], "downloadFolderArchive response 200 headers")
+	if archiveHeaders["Content-Disposition"] == nil {
+		t.Error("downloadFolderArchive response 200 does not declare Content-Disposition")
+	}
+
+	for _, operationID := range []string{"headObject", "headSiteRoot", "headSitePath"} {
+		operation := findOpenAPIOperation(t, document, operationID)
+		responses := mustJSONObject(t, operation["responses"], operationID+" responses")
+		for status, rawResponse := range responses {
+			response := mustJSONObject(t, rawResponse, operationID+" response "+status)
+			if response["content"] != nil {
+				t.Errorf("%s response %s declares a body for HEAD", operationID, status)
+			}
+		}
+	}
+
+	for _, operationID := range []string{"downloadSiteRoot", "downloadSitePath"} {
+		operation := findOpenAPIOperation(t, document, operationID)
+		responses := mustJSONObject(t, operation["responses"], operationID+" responses")
+		internalError := mustJSONObject(t, responses["500"], operationID+" response 500")
+		if internalError["content"] != nil {
+			t.Errorf("%s response 500 declares a body for the status-only website error", operationID)
+		}
+		unavailable := mustJSONObject(t, responses["503"], operationID+" response 503")
+		unavailableContent := mustJSONObject(t, unavailable["content"], operationID+" response 503 content")
+		if unavailableContent["application/json"] == nil {
+			t.Errorf("%s response 503 does not declare the rate-limit JSON error variant", operationID)
+		}
 	}
 }
 

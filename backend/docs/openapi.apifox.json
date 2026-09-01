@@ -236,14 +236,7 @@
             }
           },
           "500": {
-            "description": "An internal operation failed. Error code depends on the failed subsystem.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
+            "description": "An internal site lookup or content operation failed. The website handler returns only the status and X-Request-ID.",
             "headers": {
               "X-Request-ID": {
                 "$ref": "#/components/headers/RequestIDHeader"
@@ -251,7 +244,7 @@
             }
           },
           "503": {
-            "description": "The shared rate-limit backend is unavailable. Error code: rate_limit_unavailable.",
+            "description": "A site dependency is unavailable and may return a status-only website response; the rate-limit middleware returns a JSON ErrorEnvelope with code rate_limit_unavailable.",
             "content": {
               "application/json": {
                 "schema": {
@@ -339,14 +332,7 @@
             }
           },
           "429": {
-            "description": "A request rate limit was exceeded. Error code: rate_limited.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
+            "description": "A request rate limit was exceeded. HEAD returns no response body.",
             "headers": {
               "X-Request-ID": {
                 "$ref": "#/components/headers/RequestIDHeader"
@@ -354,14 +340,7 @@
             }
           },
           "500": {
-            "description": "An internal operation failed. Error code depends on the failed subsystem.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
+            "description": "An internal site lookup or content operation failed. HEAD returns no response body.",
             "headers": {
               "X-Request-ID": {
                 "$ref": "#/components/headers/RequestIDHeader"
@@ -369,14 +348,7 @@
             }
           },
           "503": {
-            "description": "The shared rate-limit backend is unavailable. Error code: rate_limit_unavailable.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
+            "description": "A site dependency or the shared rate-limit backend is unavailable. HEAD returns no response body.",
             "headers": {
               "X-Request-ID": {
                 "$ref": "#/components/headers/RequestIDHeader"
@@ -498,14 +470,7 @@
             }
           },
           "500": {
-            "description": "An internal operation failed. Error code depends on the failed subsystem.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
+            "description": "An internal site lookup or content operation failed. The website handler returns only the status and X-Request-ID.",
             "headers": {
               "X-Request-ID": {
                 "$ref": "#/components/headers/RequestIDHeader"
@@ -513,7 +478,7 @@
             }
           },
           "503": {
-            "description": "The shared rate-limit backend is unavailable. Error code: rate_limit_unavailable.",
+            "description": "A site dependency is unavailable and may return a status-only website response; the rate-limit middleware returns a JSON ErrorEnvelope with code rate_limit_unavailable.",
             "content": {
               "application/json": {
                 "schema": {
@@ -601,14 +566,7 @@
             }
           },
           "429": {
-            "description": "A request rate limit was exceeded. Error code: rate_limited.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
+            "description": "A request rate limit was exceeded. HEAD returns no response body.",
             "headers": {
               "X-Request-ID": {
                 "$ref": "#/components/headers/RequestIDHeader"
@@ -616,14 +574,7 @@
             }
           },
           "500": {
-            "description": "An internal operation failed. Error code depends on the failed subsystem.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
+            "description": "An internal site lookup or content operation failed. HEAD returns no response body.",
             "headers": {
               "X-Request-ID": {
                 "$ref": "#/components/headers/RequestIDHeader"
@@ -631,14 +582,7 @@
             }
           },
           "503": {
-            "description": "The shared rate-limit backend is unavailable. Error code: rate_limit_unavailable.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
+            "description": "A site dependency or the shared rate-limit backend is unavailable. HEAD returns no response body.",
             "headers": {
               "X-Request-ID": {
                 "$ref": "#/components/headers/RequestIDHeader"
@@ -1890,6 +1834,9 @@
               }
             },
             "headers": {
+              "Content-Disposition": {
+                "$ref": "#/components/headers/ContentDispositionHeader"
+              },
               "X-Request-ID": {
                 "$ref": "#/components/headers/RequestIDHeader"
               }
@@ -2819,14 +2766,7 @@
             }
           },
           "400": {
-            "description": "Bucket name or object key is invalid. Error codes: invalid_bucket_name, invalid_object_key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
+            "description": "Bucket name or object key is invalid. HEAD returns no response body.",
             "headers": {
               "X-Request-ID": {
                 "$ref": "#/components/headers/RequestIDHeader"
@@ -2834,14 +2774,7 @@
             }
           },
           "401": {
-            "description": "Private object access requires a valid bearer token. Error code: unauthorized.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
+            "description": "Private object access requires a valid bearer token. HEAD returns no response body.",
             "headers": {
               "X-Request-ID": {
                 "$ref": "#/components/headers/RequestIDHeader"
@@ -2849,14 +2782,7 @@
             }
           },
           "404": {
-            "description": "Object not found. Error code: object_not_found.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
+            "description": "Object not found. HEAD returns no response body.",
             "headers": {
               "X-Request-ID": {
                 "$ref": "#/components/headers/RequestIDHeader"
@@ -2864,14 +2790,7 @@
             }
           },
           "429": {
-            "description": "A request rate limit was exceeded. Error code: rate_limited.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
+            "description": "A request rate limit was exceeded. HEAD returns no response body.",
             "headers": {
               "X-Request-ID": {
                 "$ref": "#/components/headers/RequestIDHeader"
@@ -2879,14 +2798,7 @@
             }
           },
           "500": {
-            "description": "Failed to open object content. Error codes: object_lookup_failed, object_open_failed.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
+            "description": "Failed to open object content. HEAD returns no response body.",
             "headers": {
               "X-Request-ID": {
                 "$ref": "#/components/headers/RequestIDHeader"
@@ -2894,14 +2806,7 @@
             }
           },
           "503": {
-            "description": "The shared rate-limit backend is unavailable. Error code: rate_limit_unavailable.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
+            "description": "The shared rate-limit backend is unavailable. HEAD returns no response body.",
             "headers": {
               "X-Request-ID": {
                 "$ref": "#/components/headers/RequestIDHeader"
@@ -2936,8 +2841,9 @@
         ],
         "requestBody": {
           "required": true,
+          "description": "Raw object bytes. The backend preserves the request Content-Type as object metadata and accepts any media type.",
           "content": {
-            "application/octet-stream": {
+            "*/*": {
               "schema": {
                 "type": "string",
                 "format": "binary"
