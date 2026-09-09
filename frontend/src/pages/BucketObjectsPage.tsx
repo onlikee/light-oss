@@ -135,8 +135,8 @@ function ExplorerEntriesLoadingOverlay({
   absolute?: boolean;
 }) {
   const content = (
-    <div className="flex items-center justify-center rounded-md bg-background/80 p-3 text-muted-foreground shadow-sm ring-1 ring-border/70">
-      <Spinner className="size-5" />
+    <div className="flex items-center justify-center rounded-md bg-background/80">
+      <Spinner className="size-6 text-muted-foreground" />
     </div>
   );
 

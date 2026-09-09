@@ -40,7 +40,6 @@ import {
 } from "@/components/ui/empty";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Tooltip,
   TooltipContent,
@@ -212,32 +211,6 @@ export function BucketList({
             </CardFooter>
           </Card>
         ))}
-        {loading
-          ? Array.from({ length: 5 }).map((_, index) => (
-              <Card
-                className="border-border/70 bg-card"
-                key={`skeleton-${index}`}
-              >
-                <CardContent className="flex flex-col gap-4 p-6">
-                  <div className="flex flex-col gap-2">
-                    <Skeleton className="h-7 w-36" />
-                    <Skeleton className="h-4 w-24" />
-                  </div>
-                  <div className="flex flex-col gap-3">
-                    <div className="flex flex-col gap-1">
-                      <Skeleton className="h-3 w-20" />
-                      <Skeleton className="h-4 w-32" />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <Skeleton className="h-3 w-20" />
-                      <Skeleton className="h-4 w-32" />
-                    </div>
-                  </div>
-                  <Skeleton className="h-8 w-24" />
-                </CardContent>
-              </Card>
-            ))
-          : null}
       </div>
 
       {!loading && buckets.length === 0 && hasActiveSearch ? (
