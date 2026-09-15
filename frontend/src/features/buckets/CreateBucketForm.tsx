@@ -54,7 +54,7 @@ export function CreateBucketDialog({
       <DialogTrigger asChild>
         <button
           aria-label={t("buckets.create.title")}
-          className="flex min-h-64 cursor-pointer items-center justify-center rounded-xl bg-card text-card-foreground ring-1 ring-foreground/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="flex min-h-0 cursor-pointer items-center justify-center rounded-xl bg-card text-card-foreground ring-1 ring-foreground/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           type="button"
         >
           <PlusIcon aria-hidden="true" className="size-10 text-muted-foreground" />

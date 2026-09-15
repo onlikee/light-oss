@@ -35,6 +35,8 @@ describe("BucketList", () => {
 
     renderWithApp(
       <BucketList
+        pinnedIds={[]}
+        onTogglePin={vi.fn()}
         buckets={[createBucket()]}
         createPending={false}
         deleteDisabled={false}

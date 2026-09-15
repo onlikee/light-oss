@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   CircleAlertIcon,
@@ -9,8 +10,17 @@ import {
   ShieldCheckIcon,
 } from "lucide-react";
 import { listBuckets } from "@/api/buckets";
+import { listSites } from "@/api/sites";
 import { getSystemStats } from "@/api/system";
-import type { StorageLimitStatus, SystemStorageStats } from "@/api/types";
+import type {
+  Bucket,
+  Site,
+  StorageLimitStatus,
+  SystemStorageStats,
+} from "@/api/types";
+import { PinnedBuckets } from "@/features/buckets/PinnedBuckets";
+import { usePinnedBuckets } from "@/features/buckets/usePinnedBuckets";
+import { useDeleteBucket } from "@/features/buckets/useDeleteBucket";
 import { StatCard } from "@/components/StatCard";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -41,16 +51,53 @@ import { useAppSettings } from "@/lib/settings";
 export function DashboardPage() {
   const { settings } = useAppSettings();
   const { locale, t } = useI18n();
+  const { pinnedIds, togglePin, removePin, reconcilePins } = usePinnedBuckets(
+    settings.apiBaseUrl,
+  );
+  const { deleteBucket, deletingBucketName } = useDeleteBucket(removePin);
+  const reconciledSnapshot = useRef("");
 
   const tokenConfigured = hasBearerToken(settings.bearerToken);
   const systemStatsEnabled =
     settings.apiBaseUrl.trim() !== "" && tokenConfigured;
 
   const bucketsQuery = useQuery({
-    queryKey: ["buckets", settings.apiBaseUrl, settings.bearerToken],
-    queryFn: () => listBuckets(settings),
+    queryKey: ["buckets", settings.apiBaseUrl, settings.bearerToken, ""],
+    queryFn: () => listBuckets(settings, { search: "" }),
     enabled: settings.apiBaseUrl.trim() !== "",
   });
+
+  const sitesQuery = useQuery({
+    queryKey: ["sites", settings.apiBaseUrl, settings.bearerToken],
+    queryFn: () => listSites(settings),
+    enabled: settings.apiBaseUrl.trim() !== "" && pinnedIds.length > 0,
+  });
+  const fullBuckets = bucketsQuery.data?.items;
+  const fullSnapshot = JSON.stringify([
+    settings.apiBaseUrl,
+    settings.bearerToken,
+    bucketsQuery.dataUpdatedAt,
+  ]);
+
+  useEffect(() => {
+    if (
+      bucketsQuery.isSuccess &&
+      bucketsQuery.isFetchedAfterMount &&
+      !bucketsQuery.isFetching &&
+      fullBuckets &&
+      reconciledSnapshot.current !== fullSnapshot
+    ) {
+      reconciledSnapshot.current = fullSnapshot;
+      reconcilePins(fullBuckets.map((bucket) => bucket.id));
+    }
+  }, [
+    fullBuckets,
+    fullSnapshot,
+    bucketsQuery.isSuccess,
+    bucketsQuery.isFetchedAfterMount,
+    bucketsQuery.isFetching,
+    reconcilePins,
+  ]);
 
   const systemStatsQuery = useQuery({
     queryKey: ["system-stats", settings.apiBaseUrl, settings.bearerToken],
@@ -62,7 +109,22 @@ export function DashboardPage() {
     refetchOnWindowFocus: false,
   });
 
-  const buckets = bucketsQuery.data?.items ?? [];
+  const buckets = fullBuckets ?? [];
+  const bucketsById = new Map(buckets.map((bucket) => [bucket.id, bucket]));
+  const pinnedBuckets = pinnedIds
+    .map((id) => bucketsById.get(id))
+    .filter((bucket): bucket is Bucket => bucket !== undefined);
+  const sitesByBucket: Record<string, Site[]> = {};
+  for (const site of sitesQuery.data?.items ?? []) {
+    if (!sitesByBucket[site.bucket]) sitesByBucket[site.bucket] = [];
+    sitesByBucket[site.bucket].push(site);
+  }
+
+  async function handleDeleteBucket(name: string) {
+    const bucket = buckets.find((item) => item.name === name);
+    await deleteBucket({ name, id: bucket?.id });
+  }
+
   const latestBucket = buckets.reduce<(typeof buckets)[number] | null>(
     (latest, current) => {
       if (!latest) {
@@ -170,6 +232,23 @@ export function DashboardPage() {
           }
         />
       </div>
+
+      {pinnedIds.length > 0 && sitesQuery.isError ? (
+        <Alert variant="destructive">
+          <CircleAlertIcon />
+          <AlertTitle>{t("errors.loadSites")}</AlertTitle>
+          <AlertDescription>{sitesQuery.error.message}</AlertDescription>
+        </Alert>
+      ) : null}
+
+      <PinnedBuckets
+        buckets={pinnedBuckets}
+        onTogglePin={togglePin}
+        onDeleteBucket={handleDeleteBucket}
+        deleteDisabled={sitesQuery.isPending || sitesQuery.isError}
+        deletePendingBucket={deletingBucketName}
+        sitesByBucket={sitesByBucket}
+      />
 
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
@@ -347,7 +426,6 @@ export function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-
     </section>
   );
 }

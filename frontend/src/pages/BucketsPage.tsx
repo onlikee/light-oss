@@ -1,13 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CircleAlertIcon } from "lucide-react";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import type { Site } from "@/api/types";
-import { createBucket, deleteBucket, listBuckets } from "@/api/buckets";
+import type { Bucket, Site } from "@/api/types";
+import { createBucket, listBuckets } from "@/api/buckets";
 import { listSites } from "@/api/sites";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { BucketList } from "@/features/buckets/BucketList";
+import { PinnedBuckets } from "@/features/buckets/PinnedBuckets";
+import { useDeleteBucket } from "@/features/buckets/useDeleteBucket";
+import { usePinnedBuckets } from "@/features/buckets/usePinnedBuckets";
 import { useI18n } from "@/lib/i18n";
 import { useAppSettings } from "@/lib/settings";
 
@@ -15,8 +18,12 @@ export function BucketsPage() {
   const { settings } = useAppSettings();
   const { t } = useI18n();
   const queryClient = useQueryClient();
+  const { pinnedIds, togglePin, removePin, reconcilePins } = usePinnedBuckets(
+    settings.apiBaseUrl,
+  );
+  const reconciledSnapshot = useRef("");
   const [searchParams, setSearchParams] = useSearchParams();
-  const [deletingBucketName, setDeletingBucketName] = useState("");
+  const { deleteBucket, deletingBucketName } = useDeleteBucket(removePin);
   const [searchInput, setSearchInput] = useState("");
   const search = normalizeBucketSearch(searchParams.get("search"));
   const bucketsBaseQueryKey = [
@@ -41,6 +48,41 @@ export function BucketsPage() {
     enabled: settings.apiBaseUrl.trim() !== "",
   });
 
+  const pinnedBucketsQuery = useQuery({
+    queryKey: [...bucketsBaseQueryKey, ""],
+    queryFn: () => listBuckets(settings, { search: "" }),
+    enabled:
+      settings.apiBaseUrl.trim() !== "" &&
+      search !== "" &&
+      pinnedIds.length > 0,
+  });
+  const fullBucketsQuery = search === "" ? bucketsQuery : pinnedBucketsQuery;
+  const fullBuckets = fullBucketsQuery.data?.items;
+  const fullSnapshot = JSON.stringify([
+    ...bucketsBaseQueryKey,
+    fullBucketsQuery.dataUpdatedAt,
+  ]);
+
+  useEffect(() => {
+    if (
+      fullBucketsQuery.isSuccess &&
+      fullBucketsQuery.isFetchedAfterMount &&
+      !fullBucketsQuery.isFetching &&
+      fullBuckets &&
+      reconciledSnapshot.current !== fullSnapshot
+    ) {
+      reconciledSnapshot.current = fullSnapshot;
+      reconcilePins(fullBuckets.map((bucket) => bucket.id));
+    }
+  }, [
+    fullBuckets,
+    fullSnapshot,
+    fullBucketsQuery.isSuccess,
+    fullBucketsQuery.isFetchedAfterMount,
+    fullBucketsQuery.isFetching,
+    reconcilePins,
+  ]);
+
   const sitesQuery = useQuery({
     queryKey: sitesQueryKey,
     queryFn: () => listSites(settings),
@@ -60,42 +102,15 @@ export function BucketsPage() {
     },
   });
 
-  const deleteBucketMutation = useMutation({
-    mutationFn: async (bucketName: string) => {
-      setDeletingBucketName(bucketName);
-      await deleteBucket(settings, bucketName);
-    },
-    onSuccess: async (_, bucketName) => {
-      queryClient.removeQueries({
-        queryKey: [
-          "explorer-entries",
-          settings.apiBaseUrl,
-          settings.bearerToken,
-          bucketName,
-        ],
-      });
-      toast.success(t("toast.bucketDeleted"));
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: bucketsBaseQueryKey }),
-        queryClient.invalidateQueries({ queryKey: sitesQueryKey }),
-      ]);
-    },
-    onError: (error) => {
-      const message =
-        error instanceof Error ? error.message : t("errors.deleteBucket");
-      toast.error(message);
-    },
-    onSettled: () => {
-      setDeletingBucketName("");
-    },
-  });
-
   async function handleCreateBucket(name: string) {
     await createBucketMutation.mutateAsync(name);
   }
 
   async function handleDeleteBucket(bucketName: string) {
-    await deleteBucketMutation.mutateAsync(bucketName);
+    const bucket =
+      fullBuckets?.find((item) => item.name === bucketName) ??
+      bucketsQuery.data?.items.find((item) => item.name === bucketName);
+    await deleteBucket({ name: bucketName, id: bucket?.id });
   }
 
   function updateSearchParams(nextSearch: string) {
@@ -123,6 +138,12 @@ export function BucketsPage() {
   }
 
   const buckets = bucketsQuery.data?.items ?? [];
+  const bucketsById = new Map(
+    fullBuckets?.map((bucket) => [bucket.id, bucket]),
+  );
+  const pinnedBuckets = pinnedIds
+    .map((id) => bucketsById.get(id))
+    .filter((bucket): bucket is Bucket => bucket !== undefined);
   const sites = sitesQuery.data?.items ?? [];
   const sitesByBucket: Record<string, Site[]> = {};
 
@@ -162,7 +183,28 @@ export function BucketsPage() {
         </Alert>
       ) : null}
 
+      {search !== "" && pinnedIds.length > 0 && pinnedBucketsQuery.isError ? (
+        <Alert variant="destructive">
+          <CircleAlertIcon />
+          <AlertTitle>{t("buckets.pin.loadError")}</AlertTitle>
+          <AlertDescription>
+            {pinnedBucketsQuery.error.message}
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
+      <PinnedBuckets
+        buckets={pinnedBuckets}
+        onTogglePin={togglePin}
+        onDeleteBucket={handleDeleteBucket}
+        deleteDisabled={sitesQuery.isLoading || sitesQuery.isError}
+        deletePendingBucket={deletingBucketName}
+        sitesByBucket={sitesByBucket}
+      />
+
       <BucketList
+        pinnedIds={pinnedIds}
+        onTogglePin={togglePin}
         buckets={buckets}
         createPending={createBucketMutation.isPending}
         deleteDisabled={sitesQuery.isLoading || sitesQuery.isError}
@@ -173,7 +215,11 @@ export function BucketsPage() {
         onRefreshBuckets={handleRefreshBuckets}
         onSearchInputChange={setSearchInput}
         onSearchSubmit={handleSearchSubmit}
-        refreshPending={bucketsQuery.isFetching || sitesQuery.isFetching}
+        refreshPending={
+          bucketsQuery.isFetching ||
+          pinnedBucketsQuery.isFetching ||
+          sitesQuery.isFetching
+        }
         search={search}
         searchInput={searchInput}
         sitesByBucket={sitesByBucket}
